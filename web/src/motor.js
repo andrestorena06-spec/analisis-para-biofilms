@@ -6,7 +6,7 @@
 // ============================================================
 import { Q_TABLA } from './criticos.js'
 import { leerHojasLibro } from './libro.js'
-import { tCuantil } from './utils.js'
+import { ic95, tCuantil } from './utils.js'
 
 const LETRAS = 'ABCDEFGH'.split('')
 export const pocillos96 = () => LETRAS.flatMap((f) => Array.from({ length: 12 }, (_, i) => f + (i + 1)))
@@ -278,7 +278,7 @@ export function resumenMuestras(e, odc) {
     return {
       Muestra: m, N_total: g.length, N_aceptadas: na, N_excluidas: g.length - na,
       Media: nul(Media), SD: nul(SD), Sospechosos: g.filter((r) => r.Sospechoso).length,
-      SEM: nul(SEM), IC95: na > 1 ? tCuantil(0.975, na - 1) * SEM : null,
+      SEM: nul(SEM), IC95: ic95(SEM, na),
       CV_pct: nul((100 * SD) / Media), Razon_ODc: finito(odc) ? nul(Media / odc) : null,
       Clasificacion: clasificar(Media, odc),
     }

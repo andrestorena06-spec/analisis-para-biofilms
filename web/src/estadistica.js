@@ -3,7 +3,7 @@
 // Cada valor de entrada es UNA réplica biológica (la media de una muestra en una placa).
 // Equivalentes en R: t.test(x, y) (Welch), p.adjust(p, "holm"), summary(aov(y ~ grupo)).
 // ============================================================
-import { betaInc, tCdf, tCuantil } from './utils.js'
+import { betaInc, ic95 as semiIC95, tCdf } from './utils.js'
 
 const finito = Number.isFinite
 
@@ -24,7 +24,7 @@ export function resumenGrupo(v) {
   const sem = sd / Math.sqrt(n)
   return {
     n, media: m, sd: finito(sd) ? sd : null, sem: finito(sem) ? sem : null,
-    ic95: n > 1 ? tCuantil(0.975, n - 1) * sem : null,
+    ic95: semiIC95(sem, n),
     cv: finito(sd) && m !== 0 ? (100 * sd) / m : null,
   }
 }

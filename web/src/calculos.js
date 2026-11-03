@@ -1,4 +1,4 @@
-import { tCuantil } from './utils.js'
+import { t95 } from './utils.js'
 
 // Desarrollo paso a paso de cada número, con los valores reales, para mostrar al pasar el mouse (data-tip).
 // Cada función devuelve texto: la primera línea es el título; las demás, el desarrollo.
@@ -12,7 +12,7 @@ export function estad(v) {
   const ss = suma(v.map((x) => (x - m) ** 2))
   const sd = n > 1 ? Math.sqrt(ss / (n - 1)) : NaN
   const sem = n > 1 ? sd / Math.sqrt(n) : NaN
-  const t = n > 1 ? tCuantil(0.975, n - 1) : NaN
+  const t = n > 1 ? t95(n) : NaN
   return { n, m, ss, sd, sem, t, ic: t * sem, cv: m ? (100 * sd) / m : NaN }
 }
 

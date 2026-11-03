@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import { dBigotes, dCaja, dError, dMedia, dMediana } from '../calculos.js'
 import { calcularLayout } from '../layout.js'
-import { ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaY, fmt, fmtTick, medir, tCuantil, ticksBonitos } from '../utils.js'
+import { ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaY, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 import { ALTO_FILA_CV, ERROR_REL, EjeY, EtiquetaFondo, EtiquetasX, FilaCV, LeyendaX, Titulo, tipoRel, useAncho } from './charts.jsx'
 
 // ---------------------------------------------------------------
@@ -177,7 +177,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
             if (v.length < 2) return { v: NaN }
             const m = v.reduce((a, b) => a + b, 0) / v.length
             const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1)), sem = sd / Math.sqrt(v.length)
-            const err = tr === 'sd' ? sd : tr === 'sem' ? sem : tCuantil(0.975, v.length - 1) * sem
+            const err = tr === 'sd' ? sd : tr === 'sem' ? sem : ic95(sem, v.length)
             return m > 1e-6 ? { v: (100 * err) / m, err, m, cv: (100 * sd) / m } : { v: NaN }
           }
           const items = grupos.flatMap((g, gi) => {

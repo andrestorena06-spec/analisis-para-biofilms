@@ -14,7 +14,7 @@ import { resumenBlancos } from '../blancos.js'
 import { excelDe } from '../api.js'
 import { Q_TABLA } from '../criticos.js'
 import { criticoGrubbs, normalizarMetodo } from '../motor.js'
-import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, estiloDefecto, fmt, tCuantil } from '../utils.js'
+import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, estiloDefecto, fmt, t95 } from '../utils.js'
 import { textoBlanco } from '../correccion.js'
 import { seroDe } from '../serotipos.js'
 import { BotonBlanco, GrupoBlanco } from './blanco.jsx'
@@ -552,8 +552,8 @@ function MetodoDetalle({ d, odc, restar }) {
       <div className="tabla-scroll chica"><table className="tabla"><thead><tr><th>n (réplicas)</th>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <th key={n}>{n}</th>)}</tr></thead>
         <tbody>
           <tr><td>g.l. = n − 1</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{n - 1}</td>)}</tr>
-          <tr><td><b>t(0,975; n − 1)</b></td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{tCuantil(0.975, n - 1).toFixed(3)}</td>)}</tr>
-          <tr><td>IC 95 % en múltiplos de SEM</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{tCuantil(0.975, n - 1).toFixed(2)} × SEM</td>)}</tr>
+          <tr><td><b>t(0,975; n − 1)</b></td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{t95(n).toFixed(3)}</td>)}</tr>
+          <tr><td>IC 95 % en múltiplos de SEM</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{t95(n).toFixed(2)} × SEM</td>)}</tr>
         </tbody></table></div>
       <p className="ayuda">Ejemplo: con 3 réplicas, IC 95 % = 4,303 × SEM = 4,303 × s / √3 ≈ 2,484 × s. Con 30 réplicas el factor baja a 2,045 × SEM.</p>
 

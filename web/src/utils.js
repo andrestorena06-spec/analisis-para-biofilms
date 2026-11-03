@@ -62,6 +62,11 @@ export function tCuantil(p, df) {
   return (lo + hi) / 2
 }
 
+// t de Student del IC 95 % de una media de n datos
+export const t95 = (n) => tCuantil(0.975, n - 1)
+// semiancho del IC 95 % de una media: t(0,975; n − 1) × SEM. Con menos de 2 datos no hay intervalo.
+export const ic95 = (sem, n) => (n > 1 ? t95(n) * sem : null)
+
 export const FUENTE = "'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif"
 
 export const fmt = (x, d = 3) => (Number.isFinite(x) ? x.toFixed(d) : 'NA')

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { dBarra } from '../calculos.js'
 import { calcularLayout, estiloTexto } from '../layout.js'
-import { CLASES, COLOR_CLASE, ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaValida, escalaY, fEscala, fmt, fmtTick, medir, tCuantil, ticksBonitos } from '../utils.js'
+import { CLASES, COLOR_CLASE, ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaValida, escalaY, fEscala, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 
 export function useAncho() {
   const ref = useRef(null)
@@ -304,15 +304,13 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
 // ---------------------------------------------------------------
 // GRÁFICO PARA EXCLUIR PUNTOS
 // ---------------------------------------------------------------
-const tCrit = (gl) => tCuantil(0.975, gl)
-
 export function resumenGrupo(g, tipo, tv = (v) => v) {
   const u = g.filter((e) => e.Usado).map((e) => tv(e.OD)).filter(Number.isFinite)
   if (!u.length) return null
   const m = u.reduce((a, b) => a + b, 0) / u.length
   const sd = u.length > 1 ? Math.sqrt(u.reduce((a, b) => a + (b - m) ** 2, 0) / (u.length - 1)) : null
   const sem = sd === null ? null : sd / Math.sqrt(u.length)
-  const err = tipo === 'sd' ? sd : tipo === 'sem' ? sem : tipo === 'ic95' && sem !== null ? tCrit(u.length - 1) * sem : null
+  const err = tipo === 'sd' ? sd : tipo === 'sem' ? sem : tipo === 'ic95' ? ic95(sem, u.length) : null
   return { m, err, n: u.length }
 }
 

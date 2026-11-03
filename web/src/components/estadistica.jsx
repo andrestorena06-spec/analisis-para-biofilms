@@ -3,332 +3,28 @@
 // seleccionables con la cepa, el medio y las placas; 3) dos paneles que se actualizan juntos: a la izquierda los grupos que se
 // comparan (cada valor y de dónde sale) y a la derecha el resultado de la prueba; 4) el resumen de todas las cepas (un clic
 // pone esa cepa en los paneles); 5) los modelos con todas las cepas juntas y el diagnóstico de supuestos, plegados.
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Nota } from './tip.jsx'
-import { Select, Vacio } from './ui.jsx'
-import { BotonCinta, CampoCinta, Cinta, Grupo, OpcionesCinta } from './cinta.jsx'
-import { Chip, DiagnosticoGlobal, Hip, MatrizP, NOMBRE_TEST, Tabla, diagnosticoGlobal, f, hipotesisGrupos, juntarDe, lecturaDe, pTxt } from './pruebas.jsx'
+import { Vacio } from './ui.jsx'
+import { Cinta } from './cinta.jsx'
+import { DiagnosticoGlobal, Tabla, diagnosticoGlobal, f, juntarDe, pTxt } from './pruebas.jsx'
 import { ComparadorLibre, GrupoModo, modoBase } from './seleccion.jsx'
 import { ReproTab } from './repro.jsx'
-import { GrupoBlanco } from './blanco.jsx'
+import { Fichas, PanelGrupos, PanelResultado } from './estpaneles.jsx'
+import { Sensibilidad, correrSensibilidad } from './estsensibilidad.jsx'
+import { ResumenLibres, ResumenSerotipos, ResumenTodas, resultadoTxt } from './estresumen.jsx'
+import { CintaEstadistica } from './estcinta.jsx'
 import { NIVEL_SERO_TXT, seroDe, serotiposDe, valoresSerotipo } from '../serotipos.js'
 import { dentroDeGrupo, nombreGrupo, usaPlaca } from '../grupolibre.js'
 import { analizarBloques, escalaSugerida, puedeBloques } from '../bloques.js'
 import { armarComparacion } from '../comparacion.js'
-import { SIN_MEDIO, UNIDAD, prepararDatos, unidadDe } from '../resumenes.js'
+import { UNIDAD, prepararDatos, unidadDe } from '../resumenes.js'
 import { analizar, anidada, parcelasDivididas, placaCepa } from '../decision.js'
-import { desvio, marcaSig, media } from '../estadistica.js'
-import { COLOR_CLASE, fmtTick, ticksBonitos } from '../utils.js'
+import { media } from '../estadistica.js'
 
 const finito = Number.isFinite
 // líneas de clase que se dibujan en el gráfico de los grupos (las escalas relativas al ODc tienen umbrales fijos)
 const UMBRALES = { odc: [[1, 'ODc'], [2, '2 × ODc'], [4, '4 × ODc']] }
-
-// ---------------------------------------------------------------
-// fichas seleccionables
-// ---------------------------------------------------------------
-function Fichas({ etiqueta, tip, opciones, activa, onClick, multi, extra }) {
-  return (
-    <div className="fila-sel">
-      <span className="fila-sel-t">{etiqueta}{tip && <Nota>{tip}</Nota>}</span>
-      <div className="fichas">
-        {opciones.map((x) => (
-          <button key={x.id} type="button" className={`ficha ${activa(x.id) ? 'on' : ''} ${multi ? 'multi' : ''}`} disabled={x.desactivada} data-tip={x.tip} onClick={() => onClick(x.id)}>
-            {multi && <i className="caja-ficha" aria-hidden>{activa(x.id) ? '✓' : ''}</i>}
-            {x.color && <i className="punto" style={{ background: x.color }} />}
-            {x.texto}{x.sub && <small>{x.sub}</small>}
-          </button>
-        ))}
-        {extra}
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------
-// gráfico de los grupos: cada punto es un valor que entra en la prueba (placa o pocillo), con la media ± DE y la letra
-// ---------------------------------------------------------------
-function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
-  const vals = grupos.flatMap((g) => g.v)
-  if (!vals.length) return null
-  const W = 560, H = 270, m = { l: 50, r: 12, t: 22, b: 58 }
-  const lo = Math.min(0, ...vals), hi = Math.max(...vals, 1e-9)
-  const t = ticksBonitos(lo, hi * 1.08, 5)
-  const y = (v) => m.t + (1 - (v - t.min) / (t.max - t.min)) * (H - m.t - m.b)
-  const band = (W - m.l - m.r) / grupos.length
-  const corto = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="dispersion" role="img" aria-label="Valores de cada grupo">
-      <rect width={W} height={H} fill="#FFFDF9" rx="8" />
-      {t.ticks.map((v) => (
-        <g key={v}>
-          <line x1={m.l} x2={W - m.r} y1={y(v)} y2={y(v)} stroke="#EFE3CF" />
-          <text x={m.l - 6} y={y(v) + 4} textAnchor="end" fontSize="10.5" fill="#8A6A49">{fmtTick(v, t.paso)}</text>
-        </g>
-      ))}
-      <text transform={`translate(13 ${(m.t + H - m.b) / 2}) rotate(-90)`} textAnchor="middle" fontSize="11" fill="#8A6A49">{unidad}</text>
-      {(umbrales || []).filter(([u]) => u >= t.min && u <= t.max).map(([u, nom]) => (
-        <g key={u} data-tip={`${u} = ${nom} de cada placa (límite de clase)`}>
-          <line x1={m.l} x2={W - m.r} y1={y(u)} y2={y(u)} stroke="#6B5A45" strokeDasharray="3 3" />
-          <text x={W - m.r - 3} y={y(u) - 3} textAnchor="end" fontSize="9.5" fill="#6B5A45">{nom}</text>
-        </g>
-      ))}
-      {grupos.map((g, i) => {
-        const cx = m.l + band * (i + 0.5)
-        const mu = g.v.length ? media(g.v) : NaN, sd = g.v.length > 1 ? desvio(g.v) : 0
-        const paso = Math.min(band * 0.07, 7)
-        return (
-          <g key={i}>
-            {i % 2 === 1 && <rect x={cx - band / 2} y={m.t} width={band} height={H - m.t - m.b} fill="#FBF3E6" opacity=".7" />}
-            {finito(mu) && (
-              <g data-tip={`${g.nombre}\nx̄ = ${f(mu, 4)}${g.v.length > 1 ? `\nDE = ${f(sd, 4)}` : ''}\nn = ${g.v.length}`}>
-                {sd > 0 && <g stroke="#3A2005" strokeWidth="1.3"><line x1={cx} x2={cx} y1={y(mu - sd)} y2={y(mu + sd)} /><line x1={cx - 7} x2={cx + 7} y1={y(mu + sd)} y2={y(mu + sd)} /><line x1={cx - 7} x2={cx + 7} y1={y(mu - sd)} y2={y(mu - sd)} /></g>}
-                <line x1={cx - Math.min(band * 0.32, 34)} x2={cx + Math.min(band * 0.32, 34)} y1={y(mu)} y2={y(mu)} stroke="#A8650F" strokeWidth="3" strokeLinecap="round" />
-              </g>
-            )}
-            {g.det.map((d, k) => (
-              <circle key={k} cx={cx + ((k % 5) - 2) * paso + 0.5 * paso * (Math.floor(k / 5) % 2)} cy={y(d.y)} r="4.2" fill={colorDe(d)} fillOpacity=".9" stroke="#fff" strokeWidth="1"
-                data-tip={`${g.nombre}\n${d.etq}: ${f(d.y, 4)}`} />
-            ))}
-            {letras?.[g.nombre] && <text x={cx} y={m.t - 6} textAnchor="middle" fontSize="13" fontWeight="700" fill="#993C1D">{letras[g.nombre]}</text>}
-            <text x={cx} y={H - m.b + 16} textAnchor="middle" fontSize="11.5" fontWeight="600" fill="#3A2005">{corto(g.nombre, Math.max(6, Math.floor(band / 6.5)))}</text>
-            <text x={cx} y={H - m.b + 30} textAnchor="middle" fontSize="10.5" fill="#8A6A49">n = {g.v.length}</text>
-          </g>
-        )
-      })}
-      <line x1={m.l} x2={W - m.r} y1={H - m.b} y2={H - m.b} stroke="#B08A55" />
-    </svg>
-  )
-}
-
-// ---------------------------------------------------------------
-// sensibilidad: ¿la conclusión cambia con otra escala, réplica, prueba o ajuste? (se calcula solo al abrirla)
-// ---------------------------------------------------------------
-function Sensibilidad({ correr }) {
-  const [abierto, setAbierto] = useState(false)
-  const R = abierto ? correr() : null
-  return (
-    <details className="tarjeta plegable sensibilidad" onToggle={(e) => setAbierto(e.currentTarget.open)}>
-      <summary>¿Cambia la conclusión con otro método? <small className="ayuda">· análisis de sensibilidad</small>
-        <Nota>{'Repite esta misma comparación con todas las combinaciones razonables de escala (OD, ln, OD ÷ ODc), réplica, prueba y ajuste.\nSirve para saber si el resultado es firme, no para elegir el que da significativo: elegir el método por el p hace que el p deje de valer.\nSe informa el método elegido por el flujo (resaltado) y, si hace falta, este control.'}</Nota></summary>
-      {R && (
-        <>
-          <div className={`veredicto ${R.robusta ? (R.sinDif ? 'ok' : 'dif') : 'mixto'}`}>
-            <b>{R.robusta ? (R.sinDif ? 'Conclusión firme: no hay diferencias' : 'Conclusión firme: hay diferencias') : 'La conclusión depende del método'}</b>
-            <span>{R.nSig} de {R.validas} combinaciones que cumplen sus supuestos dan diferencias (p &lt; 0,05)</span>
-          </div>
-          {R.siempre.length > 0 && <p className="lectura">Pares que difieren en todas las combinaciones válidas: <b>{R.siempre.join('; ')}</b>.</p>}
-          {R.alguna.length > 0 && <p className="ayuda">Solo en algunas (tomalos con cautela): {R.alguna.join('; ')}.</p>}
-          <div className="tabla-scroll">
-            <table className="tabla compacta">
-              <thead><tr><th>Escala</th><th>Réplica</th><th>Prueba</th><th>Pares</th><th className="num">p global</th><th>Pares que difieren</th><th>Supuestos</th></tr></thead>
-              <tbody>{R.filas.map((x, i) => (
-                <tr key={i} className={`${x.elegida ? 'elegida' : ''} ${x.cumple ? '' : 'fuera'}`}>
-                  <td>{x.nomE}</td><td>{x.nomD}</td><td>{x.prueba}</td><td>{x.metodo}</td>
-                  <td className={`num ${x.p < 0.05 ? 'dif-txt' : ''}`}>{pTxt(x.p)} {x.p < 0.05 ? marcaSig(x.p) : ''}</td>
-                  <td>{x.sig.length ? `${x.sig.length} de ${x.nPares}` : '—'}</td>
-                  <td>{x.cumple ? <Chip tipo="ok">cumple</Chip> : <Chip tipo="alerta" tip={x.motivo}>no cumple</Chip>}</td>
-                </tr>))}</tbody>
-            </table>
-          </div>
-          <p className="ayuda">Resaltada: la combinación que eligió el flujo. En gris: las que no cumplen los supuestos de su prueba (no cuentan para el veredicto). Los pocillos como réplica no entran: no son independientes y darían p demasiado chicos.</p>
-        </>
-      )}
-    </details>
-  )
-}
-
-// ---------------------------------------------------------------
-// panel izquierdo: los grupos que se comparan
-// ---------------------------------------------------------------
-function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCtrl, umbrales }) {
-  const { grupos, r } = foco
-  const ctrl = foco.ctrl
-  const letra = (g) => {
-    if (!r?.ok) return '–'
-    if (ctrl) {
-      if (g.nombre === ctrl) return 'control'
-      const p = r.pares.find((x) => x.a === g.nombre)
-      return p && finito(p.pa) ? (p.pa < 0.05 ? `≠ ${marcaSig(p.pa)}` : '=') : '–'
-    }
-    return r.letras?.[g.nombre] || '–'
-  }
-  return (
-    <section className="tarjeta panel-est">
-      <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Grupos que se comparan</span><span className="ayuda">{unidad} · {nivelTxt}</span></div>
-      <h2 className="pregunta">{foco.pregunta}</h2>
-      {comp === 'control' && grupos.length > 1 && (
-        <label className="campo fila-control"><span>Grupo control</span>
-          <Select value={ctrl || ''} onChange={onCtrl} opciones={grupos.filter((g) => g.v.length).map((g) => [g.nombre, g.nombre])} /></label>
-      )}
-      {grupos.some((g) => g.v.length) ? (
-        <>
-          <div className="figura"><Dispersion grupos={grupos} letras={ctrl ? null : r?.ok ? r.letras : null} colorDe={colorDe} unidad={unidad} umbrales={umbrales} /></div>
-          <div className="tabla-scroll">
-            <table className="tabla compacta">
-              <thead><tr><th>Grupo</th><th className="num">n</th><th className="num">Media</th><th className="num">DE</th><th className="num">CV %</th><th>{ctrl ? 'Contra el control' : 'Letra'}</th></tr></thead>
-              <tbody>
-                {grupos.map((g, i) => {
-                  const mu = g.v.length ? media(g.v) : NaN, sd = g.v.length > 1 ? desvio(g.v) : NaN
-                  return (
-                    <tr key={i} className={!g.v.length ? 'fuera' : ''}>
-                      <td data-tip={g.v.length ? `${g.nombre}: valores que entran\n${g.det.map((d) => `${d.etq}: ${f(d.y, 4)}`).join('\n')}` : 'Sin datos con esta selección'}><b>{g.nombre}</b></td>
-                      <td className="num">{g.v.length}</td>
-                      <td className="num">{f(mu, 3)}</td>
-                      <td className="num">{f(sd, 3)}</td>
-                      <td className="num">{finito(sd) && mu ? f((100 * sd) / Math.abs(mu), 1) : '–'}</td>
-                      <td><b>{letra(g)}</b></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="ayuda nota-panel">
-            {ctrl ? 'Cada grupo se compara con el control; «≠» difiere (p ajustado < 0,05), «=» no se distingue.' : 'Grupos con la misma letra no difieren (p ajustado ≥ 0,05).'}
-            {fuera.length > 0 && <span data-tip={`Pocillos que no entran\n${fuera.map((x) => `${x.etq} (${x.cepa}): OD ${f(x.od, 3)} — ${x.motivo}`).join('\n')}`}> {fuera.length} {fuera.length === 1 ? 'pocillo excluido' : 'pocillos excluidos'} en esta selección (pasá el mouse).</span>}
-          </p>
-        </>
-      ) : <Vacio texto="No hay datos con esta selección." />}
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------
-// panel derecho: el resultado de la prueba
-// ---------------------------------------------------------------
-function PanelResultado({ foco, alDesarrollo, extra }) {
-  const { r, ctrl } = foco
-  if (!r) return <section className="tarjeta panel-est"><Vacio texto="Elegí al menos 2 grupos con datos." /></section>
-  if (!r.ok) return <section className="tarjeta panel-est"><div className="cabeza-tarjeta"><span className="etiqueta-seccion">Resultado</span></div><Vacio titulo="No se puede hacer la prueba" texto={r.motivo} /></section>
-  const p = r.global.p, sig = p < 0.05
-  const dunnett = r.pares[0]?.metodo === 'Dunnett'
-  const hip = hipotesisGrupos(r.tipo, foco.sujeto, foco.factor, r.grupos, ctrl, dunnett)
-  const sw = r.sw, lev = r.lev
-  return (
-    <section className="tarjeta panel-est">
-      <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Resultado de la estadística</span><span className="ayuda">α = 0,05</span></div>
-      <div className={`veredicto ${sig ? 'dif' : 'ok'}`}>
-        <b>{sig ? 'Hay diferencias' : 'No hay diferencia clara'}</b>
-        <span>{NOMBRE_TEST[r.tipo]} · {r.global.est} = {f(r.global.valor, 3)}{r.global.df2 ? ` (${r.global.df1}; ${f(r.global.df2, 1)} gl)` : ` (${r.global.df1} gl)`} · p = {pTxt(p)} {sig ? marcaSig(p) : ''}</span>
-      </div>
-      <p className="lectura">{lecturaDe(r, ctrl)}</p>
-      <Hip titulo="Hipótesis" items={hip.slice(0, 1)} />
-
-      <h4>Cómo se eligió la prueba</h4>
-      <div className="indicadores">
-        <div className="ind" data-tip={sw ? `Normalidad de los residuos (Shapiro-Wilk)\nW = ${f(sw.W, 3)}, p = ${pTxt(sw.p)}\nCon menos de 8 datos tiene poco poder: no decide` : 'Hacen falta al menos 3 datos con variación'}>
-          <small>Normalidad</small>{sw ? <Chip tipo={sw.p < 0.05 ? 'alerta' : 'ok'}>{sw.p < 0.05 ? 'No normal' : 'Normal'} · p {pTxt(sw.p)}</Chip> : <Chip tipo="neutro">sin datos</Chip>}
-        </div>
-        <div className="ind" data-tip={lev ? `Igualdad de varianzas (Levene, Brown-Forsythe)\nF = ${f(lev.F, 3)}, p = ${pTxt(lev.p)}\nmayor DE / menor DE = ${f(lev.razonSD, 2)}` : 'Levene necesita 3 o más datos por grupo'}>
-          <small>Varianzas</small>{lev ? <Chip tipo={lev.p < 0.05 ? 'alerta' : 'ok'}>{lev.p < 0.05 ? 'Distintas' : 'Parecidas'} · p {pTxt(lev.p)}</Chip> : <Chip tipo="neutro">no calculable</Chip>}
-        </div>
-        <div className="ind" data-tip={r.razon}><small>Prueba</small><Chip tipo="prueba">{NOMBRE_TEST[r.tipo]}</Chip></div>
-        {r.bloques && <div className="ind" data-tip={`La placa como bloque\nCada placa mide todos los grupos: su variación (${f(r.bloques.pct, 0)} % del total) se saca del error.\nEfecto de la placa: p = ${pTxt(r.bloques.pBloque)}`}><small>Placa (bloque)</small><Chip tipo="prueba">{f(r.bloques.pct, 0)} % de la variación</Chip></div>}
-      </div>
-      <p className="razon-test">{r.razon}{dunnett && ` Contra el control se usó la prueba de Dunnett (p ajustado exacto).`}</p>
-
-      {r.pares.length > 0 && (
-        <>
-          <h4>{ctrl ? `Cada grupo contra «${ctrl}»` : 'Comparaciones de a pares'} <small className="ayuda">· p ajustado por {r.pares[0]?.metodo || 'Holm'}</small></h4>
-          <div className="tabla-scroll">
-            <table className="tabla compacta">
-              <thead><tr><th>Par</th><th className="num">Diferencia</th><th className="num">p ajustado</th><th>Resultado</th></tr></thead>
-              <tbody>
-                {r.pares.map((x) => (
-                  <tr key={x.a + '|' + x.b}>
-                    <td data-tip={`${x.a}: x̄ = ${f(x.ma, 4)}\n${x.b}: x̄ = ${f(x.mb, 4)}\n${r.tipo === 'kw' ? 'z de Dunn' : r.tipo === 'friedman' ? 'z (rangos de Friedman)' : 't'} = ${f(x.est, 3)}${finito(x.df) ? ` · gl = ${f(x.df, 1)}` : ''}\np sin ajustar = ${pTxt(x.p)}`}>{x.a} vs {x.b}</td>
-                    <td className="num">{f(x.dif, 3)}</td>
-                    <td className="num">{pTxt(x.pa)}</td>
-                    <td className={finito(x.pa) && x.pa < 0.05 ? 'dif-txt' : 'tenue'}>{!finito(x.pa) ? 'faltan datos' : x.pa < 0.05 ? `distintos ${marcaSig(x.pa)}` : 'sin diferencia'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {!ctrl && r.grupos.length > 3 && <MatrizP r={r} />}
-        </>
-      )}
-
-      <details className="plegable">
-        <summary>Tabla de la prueba global{r.tipo === 'anova' ? ' (ANOVA)' : ''}</summary>
-        <Tabla cols={['Prueba', 'Estadístico', 'gl', 'p']} filas={[[r.global.nombre, `${r.global.est} = ${f(r.global.valor, 3)}`, r.global.df2 ? `${r.global.df1}; ${f(r.global.df2, 2)}` : r.global.df1, pTxt(p)]]} />
-        {r.global.filas && <Tabla cols={['Fuente', 'Suma de cuadrados', 'gl', 'Cuadrado medio', 'F', 'p']} filas={r.global.filas.map((x) => [x[0], f(x[1], 6), x[2], finito(x[3]) ? f(x[3], 6) : '', finito(x[4]) ? f(x[4], 3) : '', finito(x[5]) ? pTxt(x[5]) : ''])} />}
-        {r.tipo === 'anova' && r.global.tabla && (
-          <Tabla cols={['Fuente', 'Suma de cuadrados', 'gl', 'Cuadrado medio', 'F', 'p']}
-            filas={[['Entre grupos', f(r.global.tabla.ssb, 6), r.global.tabla.df1, f(r.global.tabla.msb, 6), f(r.global.tabla.F, 3), pTxt(r.global.tabla.p)],
-              ['Dentro (error)', f(r.global.tabla.ssw, 6), r.global.tabla.df2, f(r.global.tabla.msw, 6), '', ''], ['Total', f(r.global.tabla.sst, 6), r.global.tabla.df1 + r.global.tabla.df2, '', '', '']]} />
-        )}
-      </details>
-      {extra}
-      <button className="chico" onClick={alDesarrollo}>Ver el cálculo paso a paso<Nota>Abre «Métodos» con esta misma comparación desarrollada: residuos, Levene, la prueba y los pares.</Nota></button>
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------
-// resumen de todas las cepas: valores por placa (agrupadas por medio) y el resultado de cada una
-// ---------------------------------------------------------------
-function ResumenTodas({ titulo, nota, placas, apagadas, filas, conMedia, medios, colResultado }) {
-  const grupos = []
-  placas.forEach((p) => { const md = p.medio || SIN_MEDIO; const g = grupos.find((x) => x.medio === md); if (g) g.placas.push(p); else grupos.push({ medio: md, placas: [p] }) })
-  const dosFilas = grupos.length > 1 || conMedia
-  return (
-    <section className="tarjeta resumen-todas">
-      <div className="cabeza-tarjeta"><span className="etiqueta-seccion">{titulo}</span>{nota && <span className="ayuda">{nota}</span>}</div>
-      <div className="tabla-scroll">
-        <table className="tabla compacta matriz-clase">
-          <thead>
-            {dosFilas && (
-              <tr><th rowSpan={2}>Muestra</th>
-                {grupos.map((g) => <th key={g.medio} colSpan={g.placas.length + (conMedia && medios.includes(g.medio) ? 1 : 0)} className="grupo-medio">{g.medio}</th>)}
-                <th rowSpan={2} className="col-resultado">{colResultado}</th></tr>
-            )}
-            <tr>
-              {!dosFilas && <th>Muestra</th>}
-              {grupos.flatMap((g) => [
-                ...g.placas.map((p) => <th key={p.id} className={`num ${apagadas.includes(p.id) ? 'apagada' : ''}`} data-tip={apagadas.includes(p.id) ? `${p.nombre}\nNo entra en la prueba (destildada arriba)` : p.nombre}>{p.nombre}</th>),
-                ...(conMedia && medios.includes(g.medio) ? [<th key={'m' + g.medio} className="num col-media">Media</th>] : []),
-              ])}
-              {!dosFilas && <th className="col-resultado">{colResultado}</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {filas.map((fi) => (
-              <tr key={fi.cepa} className={`${fi.elegida ? 'elegida' : ''} ${fi.onClick ? 'fila-clic' : ''} ${fi.apagada ? 'fuera' : ''}`} onClick={fi.onClick} data-tip={fi.onClick && !fi.elegida ? `Ver ${fi.cepa} en los paneles` : undefined}>
-                <td><b>{fi.cepa}</b></td>
-                {grupos.flatMap((g) => [
-                  ...g.placas.map((p) => {
-                    const c = fi.celdas[p.id]
-                    return c ? <td key={p.id} className={`num celda-clase ${apagadas.includes(p.id) ? 'apagada' : ''}`} style={{ '--clase': COLOR_CLASE[c.clase] || 'transparent' }} data-tip={c.tip}>{f(c.v, 3)}</td>
-                      : <td key={p.id} className="num tenue">—</td>
-                  }),
-                  ...(conMedia && medios.includes(g.medio) ? [(() => { const c = fi.medias?.[g.medio]; return <td key={'m' + g.medio} className="num col-media" data-tip={c?.tip}>{c ? f(c.v, 3) : '—'}</td> })()] : []),
-                ])}
-                <td className={`col-resultado ${fi.res.nivel || ''}`} data-tip={fi.res.tip}>{fi.res.texto}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="leyenda-clases">
-        {Object.entries(COLOR_CLASE).filter(([k]) => k.startsWith('No') || k.startsWith('Productor')).map(([k, col]) => <span key={k}><i className="punto" style={{ background: col }} />{k}</span>)}
-      </div>
-    </section>
-  )
-}
-
-const resultadoTxt = (r) => {
-  if (!r) return { texto: '—', nivel: 'na', tip: 'Sin datos' }
-  if (!r.ok) return { texto: '—', nivel: 'na', tip: r.motivo }
-  const p = r.global.p, sig = p < 0.05
-  const orden = [...r.grupos].sort((a, z) => media(z.v) - media(a.v))
-  return {
-    texto: <><b>{sig ? (orden.length === 2 ? `${orden[0].nombre} > ${orden[1].nombre}` : 'difieren') : 'sin dif.'}</b> <small>p {pTxt(p)}{sig ? ` ${marcaSig(p)}` : ''}</small></>,
-    nivel: sig ? 'dif' : 'ok',
-    tip: `${NOMBRE_TEST[r.tipo]}: ${r.global.est} = ${f(r.global.valor, 3)} · p = ${pTxt(p)}\n${r.grupos.map((g) => `${g.nombre}: x̄ = ${f(media(g.v), 3)} (n ${g.v.length})`).join('\n')}`,
-  }
-}
 
 // ===============================================================
 // PÁGINA
@@ -427,43 +123,7 @@ export function EstadisticaTab({ s }) {
   const bloquePosible = conBloque && foco && puedeBloques(foco.grupos.filter((g) => g.v.length))
 
   // ---- sensibilidad: la misma comparación con todas las combinaciones razonables de escala, réplica, prueba y ajuste ----
-  const sensibilidad = () => {
-    const escalas = [['od', unidadDe('od', X.corregida)], ['ln', unidadDe('ln', X.corregida)], ...(X.sinOdc.length ? [] : [['odc', 'OD ÷ ODc']])]
-    const disenos = modo === 'serotipos' ? ['cepa', 'bloque', 'placa'] : conBloque ? ['bloque', 'placa'] : [nivelDatos]
-    const NOM_D = { cepa: 'Cepa', bloque: 'Placa como bloque', placa: 'Placa', pocillo: 'Pocillos' }
-    const ajustes = comp === 'control' ? ['control'] : ['holm', 'tukey', ...(ajuste === 'lsd' ? ['lsd'] : [])]
-    const filas = []
-    escalas.forEach(([esc, nomE]) => {
-      const XX = esc === variable ? X : prepararDatos(s, D, esc)
-      disenos.forEach((dis) => {
-        const gs = gruposFoco(XX, dis === 'bloque' ? 'placa' : dis).filter((g) => g.v.length)
-        if (gs.length < 2) return
-        if (dis === 'bloque' && !puedeBloques(gs)) return
-        const ctrl = ctrlDe(gs)
-        const pruebas = dis === 'bloque' ? [['anova', 'ANOVA en bloques'], ['kw', 'Friedman']] : [['anova', 'ANOVA'], ['welch', 'ANOVA de Welch'], ['kw', 'Kruskal-Wallis']]
-        pruebas.forEach(([forz]) => ajustes.forEach((aj) => {
-          // con Kruskal-Wallis los pares son siempre Dunn con Holm: no se repite la fila
-          if (forz === 'kw' && dis !== 'bloque' && aj !== ajustes[0]) return
-          const r = dis === 'bloque' ? analizarBloques(gs, forz, ctrl, aj === 'control' ? 'holm' : aj, nombrePlaca) : analizar(gs, forz, ctrl, aj === 'control' ? 'holm' : aj)
-          if (!r?.ok) return
-          const normal = !r.sw || r.sw.p >= 0.05, igual = !r.lev || r.lev.p >= 0.05
-          const cumple = r.tipo === 'anova' ? normal && igual : r.tipo === 'welch' || r.tipo === 'bloques' ? normal : true
-          const motivo = r.tipo === 'anova' ? (!normal ? 'residuos no normales' : !igual ? 'varianzas distintas' : '') : (r.tipo === 'welch' || r.tipo === 'bloques') && !normal ? 'residuos no normales' : ''
-          const sig = r.pares.filter((p) => finito(p.pa) && p.pa < 0.05)
-          filas.push({ esc, nomE, dis, nomD: NOM_D[dis], tipo: r.tipo, prueba: NOMBRE_TEST[r.tipo], metodo: r.pares[0]?.metodo || '—', aj, p: r.global.p, sig, nPares: r.pares.length, cumple, motivo,
-            elegida: esc === variable && dis === (nivel === 'bloque' && !bloquePosible ? 'placa' : nivel) && r.tipo === foco.r?.tipo && (aj === 'control' || aj === ajuste || (r.tipo === 'kw' && aj === ajustes[0])) })
-        }))
-      })
-    })
-    const validas = filas.filter((x) => x.cumple)
-    const nSig = validas.filter((x) => x.p < 0.05).length
-    const clave = (p) => (p.dif >= 0 ? `${p.a} > ${p.b}` : `${p.b} > ${p.a}`)
-    const conjuntos = validas.map((x) => new Set(x.sig.map(clave)))
-    const siempre = conjuntos.length ? [...conjuntos[0]].filter((k) => conjuntos.every((c) => c.has(k))) : []
-    const alguna = [...new Set(conjuntos.flatMap((c) => [...c]))].filter((k) => !siempre.includes(k))
-    const robusta = validas.length > 0 && (nSig === 0 || nSig === validas.length)
-    return { filas, validas: validas.length, nSig, siempre, alguna, robusta, sinDif: nSig === 0 }
-  }
+  const sensibilidad = () => correrSensibilidad({ s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco })
 
   // pocillos excluidos que tocan a la selección
   const fueraFoco = !foco ? [] : X.fuera.filter((x) => (modo === 'cepas' ? cepasIn.includes(x.cepa) : modo === 'serotipos' ? cepasSero.includes(x.cepa) && serosIn.includes(seroC(x.cepa)) : modo === 'libre' ? true : x.cepa === cepaSel) && (modo === 'libre' || placasUsadas.some((p) => p.id === x.placaId)))
@@ -503,46 +163,9 @@ export function EstadisticaTab({ s }) {
     resumen = <ResumenTodas titulo={`Todas las cepas${juntar ? ' · todos los medios' : ` · ${medioSel}`}`} nota="Las letras corresponden a la comparación de arriba"
       placas={placasAlc} apagadas={fueraPl} filas={filas} conMedia={false} medios={[]} colResultado={foco.ctrl ? 'Contra el control' : 'Letra'} />
   } else if (modo === 'serotipos' && foco) {
-    const r = foco.r
-    const sinSero = X.cepas.filter((c) => !seroC(c))
-    const mediaCepa = (c) => { const v = X.obsPlaca.filter((x) => x.cepa === c && usada(x)).map((x) => x.y); return v.length ? media(v) : NaN }
-    resumen = (
-      <section className="tarjeta resumen-todas">
-        <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Todos los serotipos{juntar ? ' · todos los medios' : ` · ${medioSel}`}</span><span className="ayuda">Las letras corresponden a la comparación de arriba</span></div>
-        <div className="tabla-scroll"><table className="tabla compacta">
-          <thead><tr><th>Serotipo</th><th>Cepas (media de cada una)</th><th className="num">n</th><th className="num">Media</th><th className="num">DE</th><th className="col-resultado">{foco.ctrl ? 'Contra el control' : 'Letra'}</th></tr></thead>
-          <tbody>{seros.map((sr) => {
-            const dentro = serosIn.includes(sr)
-            const g = foco.grupos.find((x) => x.nombre === sr)
-            const cs = X.cepas.filter((c) => seroC(c) === sr)
-            const res = !dentro ? { texto: <span className="tenue">no entra</span>, nivel: 'na' }
-              : !r?.ok || !g?.v.length ? { texto: '—', nivel: 'na' }
-                : foco.ctrl ? (sr === foco.ctrl ? { texto: <b>control</b>, nivel: 'na' } : (() => { const p = r.pares.find((x) => x.a === sr); return p && finito(p.pa) ? { texto: <><b>{p.pa < 0.05 ? '≠ control' : '= control'}</b> <small>p {pTxt(p.pa)}</small></>, nivel: p.pa < 0.05 ? 'dif' : 'ok' } : { texto: '—', nivel: 'na' } })())
-                  : { texto: <b>{r.letras?.[sr] || '—'}</b>, nivel: r.global.p < 0.05 ? 'dif' : 'ok', tip: 'Los serotipos que comparten una letra no difieren (p ajustado ≥ 0,05)' }
-            return (
-              <tr key={sr} className={dentro ? '' : 'apagada'}>
-                <td><b>{sr}</b></td>
-                <td>{cs.map((c) => <span key={c} className={`chip-cepa ${cepasSero.includes(c) ? '' : 'tenue'}`}>{c} <small>{finito(mediaCepa(c)) ? f(mediaCepa(c), 3) : '—'}</small></span>)}</td>
-                <td className="num">{g?.v.length || 0}</td><td className="num">{g?.v.length ? f(media(g.v), 3) : '—'}</td><td className="num">{g?.v.length > 1 ? f(desvio(g.v), 3) : '—'}</td>
-                <td className={`col-resultado ${res.nivel}`} data-tip={res.tip}>{res.texto}</td>
-              </tr>
-            )
-          })}</tbody>
-        </table></div>
-        {sinSero.length > 0 && <p className="ayuda">Sin serotipo (no entran): {sinSero.join(', ')}. <button className="fantasma chico" onClick={s.abrirEditar}>Cargar serotipos</button></p>}
-      </section>
-    )
+    resumen = <ResumenSerotipos s={s} foco={foco} X={X} seros={seros} serosIn={serosIn} cepasSero={cepasSero} seroC={seroC} usada={usada} juntar={juntar} medioSel={medioSel} />
   } else if (libres.length) {
-    resumen = (
-      <section className="tarjeta resumen-todas">
-        <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Todas las comparaciones a medida</span><span className="ayuda">Clic en una para verla arriba</span></div>
-        <div className="tabla-scroll"><table className="tabla compacta">
-          <thead><tr><th>Comparación</th><th>Grupos</th><th className="col-resultado">Resultado</th></tr></thead>
-          <tbody>{libres.map((c, i) => { const gs = gruposLibre(c); const { r } = analizarG(gs); const res = resultadoTxt(r); return (
-            <tr key={i} className={`${i === iLibre ? 'elegida' : 'fila-clic'}`} onClick={() => setO('selLibre', i)}><td><b>ANOVA {i + 1}</b></td><td>{gs.map((g) => g.nombre).join(' vs ')}</td><td className={`col-resultado ${res.nivel}`} data-tip={res.tip}>{res.texto}</td></tr>) })}</tbody>
-        </table></div>
-      </section>
-    )
+    resumen = <ResumenLibres libres={libres} iLibre={iLibre} gruposLibre={gruposLibre} analizarG={analizarG} setO={setO} />
   }
 
   // ---- análisis con todas las cepas juntas y supuestos ----
@@ -579,47 +202,7 @@ export function EstadisticaTab({ s }) {
 
   return (
     <div className="est-pag">
-      <Cinta>
-        {grupoModo}
-        <Grupo titulo="Datos">
-          <OpcionesCinta valor={variable} onChange={(v) => setO('variable', v)} opciones={[
-            ['od', 'OD', 'OD', null, s.restarBlanco ? 'OD corregida (OD leída − blanco)' : 'OD tal cual'], ['ln', 'ln(OD)', 'ln', null, 'Logaritmo natural de la OD\nEstabiliza la varianza cuando la DE crece con la media'], ['odc', 'OD ÷ ODc', '÷', null, 'Cada OD dividida por el ODc de su placa: cada unidad es un ODc (1 = ODc, 2 = 2 × ODc, 4 = 4 × ODc)\nQuita la diferencia de tinción entre placas; la dispersión sigue creciendo con la OD'],
-          ]} />
-        </Grupo>
-        {modo === 'serotipos' && (
-          <Grupo titulo="Réplica">
-            <OpcionesCinta valor={nivel} onChange={(v) => setO('nivelSero', v)} opciones={[
-              ['cepa', 'Cepa', null, 'etiqueta', 'Un valor por cepa: la media de sus placas\nLa cepa es la réplica del serotipo: la opción correcta para concluir'],
-              ['bloque', 'Placa como bloque', null, 'resumen', 'Un valor por placa de cada cepa, con la placa como bloque\nCada placa mide todos los serotipos: se saca su variación del error'],
-              ['placa', 'Placa', null, 'placas', 'Un valor por placa de cada cepa\nLas placas de una misma cepa no son independientes como cepas distintas: los p salen más chicos'],
-              ['pocillo', 'Pocillos', null, 'puntos', 'Cada pocillo cuenta como réplica\nMuchos más datos, pero no son independientes: los p salen demasiado chicos'],
-            ]} />
-          </Grupo>
-        )}
-        {modo !== 'placas' && modo !== 'serotipos' && !usaPlacaLibre && (
-          <Grupo titulo="Réplica">
-            <OpcionesCinta valor={nivel} onChange={(v) => setO('nivel', v)} opciones={[
-              ...(conBloque ? [['bloque', 'Placa como bloque', null, 'resumen', 'Un valor por placa, con la placa como bloque (recomendado al comparar cepas)\nCada placa es un día de experimento y mide todas las cepas: si una placa tiñó más, sube a todas. El modelo en bloques saca esa variación del error y la prueba detecta mejor las diferencias.\nHacen falta 3 o más placas con todos los grupos.']] : []),
-              ['placa', 'Placa', null, 'placas', 'Un valor por placa (OD media de sus pocillos)\nEs la réplica biológica: la opción correcta para concluir'],
-              ['pocillo', 'Pocillos', null, 'puntos', 'Cada pocillo cuenta como réplica\nDa más datos, pero los pocillos de una placa no son independientes: los p salen demasiado chicos'],
-            ]} />
-          </Grupo>
-        )}
-        <Grupo titulo="Prueba">
-          <CampoCinta etiqueta="Prueba global" tip={'Automática: Kruskal-Wallis si los residuos no son normales (con 8 o más datos), ANOVA de Welch si las varianzas son distintas (Levene) y, si no, ANOVA clásico'}>
-            <Select value={o.prueba || 'auto'} onChange={(v) => setO('prueba', v)} opciones={[['auto', 'Automática'], ['anova', 'ANOVA clásico'], ['welch', 'ANOVA de Welch'], ['kw', 'Kruskal-Wallis']]} />
-          </CampoCinta>
-          <OpcionesCinta valor={comp} onChange={(v) => setO('comp', v)} opciones={[
-            ['pares', 'Todos los pares', null, 'copiar', 'Compara todos los grupos de a pares'],
-            ['control', 'Contra control', null, 'flecha', 'Compara cada grupo con uno de referencia (Dunnett con ANOVA clásico)'],
-          ]} />
-          <CampoCinta etiqueta="Ajuste" tip={'Holm: controla el error de todas las comparaciones; sirve con cualquier prueba\nTukey / Games-Howell: hecho para comparar todos los pares; Tukey-Kramer con el ANOVA clásico y Games-Howell con el de Welch (con Kruskal-Wallis se usa Dunn con Holm)\nLSD de Fisher: sin ajuste; solo con ANOVA clásico significativo y pocos grupos\nContra un control con ANOVA clásico se usa Dunnett'}>
-            <Select value={ajuste} onChange={(v) => setO('ajuste', v)} opciones={[['holm', 'Holm / Dunnett'], ['tukey', 'Tukey / Games-Howell'], ['lsd', 'LSD de Fisher']]} />
-          </CampoCinta>
-        </Grupo>
-        <GrupoBlanco s={s} />
-        <Grupo titulo="Desarrollo"><BotonCinta icono="libro" texto="Ver los cálculos" onClick={irDesarrollo} tip="La comparación de los paneles desarrollada paso a paso (pestaña «Métodos»)" /></Grupo>
-      </Cinta>
+      <CintaEstadistica s={s} o={o} setO={setO} grupoModo={grupoModo} variable={variable} modo={modo} nivel={nivel} conBloque={conBloque} usaPlacaLibre={usaPlacaLibre} comp={comp} ajuste={ajuste} irDesarrollo={irDesarrollo} />
 
       <section className="tarjeta est-seleccion">
         <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Qué se compara</span>
