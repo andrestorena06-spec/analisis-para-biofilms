@@ -33,8 +33,33 @@ const GrupoImagen = ({ onGuardar, onEstilo, onRango }) => (
 )
 
 // ===============================================================
-// CALIDAD: valores atípicos y exclusión de pocillos
+// REVISIÓN: valores atípicos, exclusión de pocillos y comentarios
 // ===============================================================
+// Comentarios de la revisión: texto libre de cada placa (qué se excluyó y por qué, cómo se ve la placa, conclusiones).
+// Se guarda en la sesión y sale en el informe. Se escribe en un estado local y se guarda al dejar de escribir o al salir
+// del cuadro, para no llenar el deshacer con cada letra.
+function ComentariosRevision({ s }) {
+  const id = s.activaId, guardado = s.a?.revision || ''
+  const [txt, setTxt] = useState(guardado)
+  const reloj = useRef(null), caja = useRef(null)
+  // al cambiar de placa, o con deshacer / rehacer, se muestra lo guardado (si no se está escribiendo)
+  useEffect(() => { if (document.activeElement !== caja.current) setTxt(guardado) }, [id, guardado])
+  useEffect(() => () => clearTimeout(reloj.current), [id])
+  const guardar = (v) => { clearTimeout(reloj.current); if (v !== guardado) s.setRevision(id, v) }
+  return (
+    <section className="tarjeta">
+      <div className="cabeza-tarjeta">
+        <span className="etiqueta-seccion">Comentarios</span>
+        <span className="ayuda"><Nota>Tu análisis de esta placa: qué excluiste y por qué, cómo se ven los blancos y las réplicas, qué conclusiones sacás. Se guarda con la sesión y sale en el informe, debajo de la revisión de los pocillos.</Nota></span>
+      </div>
+      <textarea ref={caja} className="comentarios-rev" rows={5} value={txt}
+        placeholder="Ej.: «Excluí B3 por una burbuja. Blancos parejos; L201 con CV alto en las tres réplicas.»"
+        onChange={(e) => { const v = e.target.value; setTxt(v); clearTimeout(reloj.current); reloj.current = setTimeout(() => s.setRevision(id, v), 800) }}
+        onBlur={() => guardar(txt)} />
+    </section>
+  )
+}
+
 export function ExcluirTab({ s }) {
   const svg = useRef()
   const [menu, abrirMenu, cerrarMenu] = useMenuContextual()
@@ -111,6 +136,7 @@ export function ExcluirTab({ s }) {
             : <span className="ayuda">No hay pocillos excluidos en esta placa.</span>}
         </div>
       </section>
+      <ComentariosRevision s={s} />
       <MenuContextual menu={menu} items={[
         ['Estilo de texto…', () => { cerrarMenu(); setDlg(true) }],
         ['Rango del eje Y…', () => { cerrarMenu(); setRng(true) }],
@@ -121,7 +147,7 @@ export function ExcluirTab({ s }) {
       {dlg && <EstiloDialog estilo={s.estilos.excluir} conClases={false} ejeDefecto={ejeE} onClose={() => setDlg(false)}
         onGuardar={(e) => { s.setEstilos((x) => ({ ...x, excluir: e })); setDlg(false) }} />}
       {exp && svg.current && (
-        <ExportDialog nombre={`calidad_${s.a.nombre}`} size0={tamDe(svg.current)} onClose={() => setExp(false)}
+        <ExportDialog nombre={`revision_${s.a.nombre}`} size0={tamDe(svg.current)} onClose={() => setExp(false)}
           render={(ref, tam) => <ExcluirChart ref={ref} estado={estado} orden={ordenE} o={o} est={s.estilos.excluir}
             eje={ejeE} odc={odcP} escala={escE} resta={resta} onClickPunto={() => {}} onContext={(e) => e.preventDefault()} tam={tam} />} />
       )}
@@ -180,7 +206,7 @@ export function GraficoTab({ s, grupoVista }) {
           <InterruptorCinta simbolo="±" texto="Error" valor={o.errores} onChange={(v) => setO('errores', v)} deshabilitado={!o.medias} tip="Agrega el error junto al valor medio" />
           <InterruptorCinta icono="umbral" texto="Clases" valor={o.lineas} onChange={(v) => setO('lineas', v)} deshabilitado={sinOdc} tip="Líneas de ODc, 2 × ODc y 4 × ODc con el nombre de cada clase" />
           <InterruptorCinta simbolo="0,3" texto="Umbrales" valor={o.valoresClase} onChange={(v) => setO('valoresClase', v)} deshabilitado={sinOdc || !o.lineas} tip="Escribe el valor numérico bajo el nombre de cada clase" />
-          <InterruptorCinta simbolo="%" texto={ERROR_REL[tipoRel(o.error)].etq} valor={!!o.cv} onChange={(v) => setO('cv', v)} tip={`Fila debajo de los nombres con el error de las barras en % de la media:\nDE → DE % (desviación estándar relativa, CV) · SEM → EE % (error estándar relativo) · IC 95 % → IC %.\nCon DE, en naranja si supera el ${cvLim} % (límite de CV de «Calidad»).`} />
+          <InterruptorCinta simbolo="%" texto={ERROR_REL[tipoRel(o.error)].etq} valor={!!o.cv} onChange={(v) => setO('cv', v)} tip={`Fila debajo de los nombres con el error de las barras en % de la media:\nDE → DE % (desviación estándar relativa, CV) · SEM → EE % (error estándar relativo) · IC 95 % → IC %.\nCon DE, en naranja si supera el ${cvLim} % (límite de CV de «Revisión»).`} />
         </Grupo>
         <GrupoImagen onGuardar={() => setExp(true)} onEstilo={() => setDlg(true)} onRango={() => setRng(true)} />
       </Cinta>
@@ -511,8 +537,8 @@ function MetodoDetalle({ d, odc, restar }) {
         <li>Productor moderado: 2 × ODc &lt; OD ≤ 4 × ODc</li>
         <li>Productor fuerte: OD &gt; 4 × ODc</li>
       </ul>
-      <p>En la escala <b>OD ÷ ODc</b> (botón «Escala» en Calidad y Gráfico, y «Datos» en Estadística) cada OD se divide por el ODc de su placa y cada unidad es un ODc: los umbrales quedan en 1, 2 y 4, iguales en todas las placas, pero la escala es lineal y la dispersión sigue creciendo con la OD.</p>
-      <p><b>Corrección por blanco</b> (botón «Restar blanco» en ODc y mapa, Calidad, Gráfico y Estadística; ahora {restar ? 'activada' : 'desactivada'}): <code>OD corregida = OD leída − x̄(blancos)</code>, con los mismos blancos aceptados del ODc de cada placa. Es una sola opción para todo el programa: el resumen, el mapa de ODc y mapa, los gráficos, las comparaciones, la estadística, los datos y el informe usan la OD corregida, y el eje dice «OD corregida». El ODc, la clasificación y los tests de atípicos se siguen haciendo con la OD leída: restar una constante no cambia el Q de Dixon ni el G de Grubbs, y los umbrales de Stepanović están definidos sobre la OD leída. Por eso, en OD corregida las líneas de clase quedan en ODc − blanco, 2 × ODc − blanco y 4 × ODc − blanco, y la escala OD ÷ ODc se calcula con la OD leída. La DE no cambia, pero la media corregida es menor: el CV y los errores relativos suben, y con medias cerca de 0 dejan de tener sentido.</p>
+      <p>En la escala <b>OD ÷ ODc</b> (botón «Escala» en Revisión y Gráfico, y «Datos» en Estadística) cada OD se divide por el ODc de su placa y cada unidad es un ODc: los umbrales quedan en 1, 2 y 4, iguales en todas las placas, pero la escala es lineal y la dispersión sigue creciendo con la OD.</p>
+      <p><b>Corrección por blanco</b> (botón «Restar blanco» en ODc y mapa, Revisión, Gráfico y Estadística; ahora {restar ? 'activada' : 'desactivada'}): <code>OD corregida = OD leída − x̄(blancos)</code>, con los mismos blancos aceptados del ODc de cada placa. Es una sola opción para todo el programa: el resumen, el mapa de ODc y mapa, los gráficos, las comparaciones, la estadística, los datos y el informe usan la OD corregida, y el eje dice «OD corregida». El ODc, la clasificación y los tests de atípicos se siguen haciendo con la OD leída: restar una constante no cambia el Q de Dixon ni el G de Grubbs, y los umbrales de Stepanović están definidos sobre la OD leída. Por eso, en OD corregida las líneas de clase quedan en ODc − blanco, 2 × ODc − blanco y 4 × ODc − blanco, y la escala OD ÷ ODc se calcula con la OD leída. La DE no cambia, pero la media corregida es menor: el CV y los errores relativos suben, y con medias cerca de 0 dejan de tener sentido.</p>
       <h3>2. Media y errores del gráfico (SD, SEM, IC 95 %)</h3>
       <p>Para cada muestra solo se usan las <b>n réplicas aceptadas</b>; los pocillos excluidos no entran en ningún cálculo. Con n &lt; 2 no se puede calcular ningún error. Sea <code>xᵢ</code> la OD de cada réplica:</p>
       <ul>

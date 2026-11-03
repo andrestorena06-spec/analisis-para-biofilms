@@ -640,3 +640,4 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
 .tabla-puestos.con-sel-u td.num:not(.col-sel) { background: var(--panel2); color: var(--tenue); }
 .tabla-puestos.con-sel-u td.num:not(.col-sel) b { color: var(--tenue); font-weight: 500; }
 .tabla-puestos.con-sel-u th.col-sel { color: var(--texto); text-decoration: underline; }
+.comentarios-rev { width: 100%; min-height: 110px; line-height: 1.5; font: inherit; }

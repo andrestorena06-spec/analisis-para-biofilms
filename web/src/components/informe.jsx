@@ -95,7 +95,7 @@ export function abrirInforme(s) {
   const conAn = s.placas.filter((p) => !p.oculta && s.analisisMap[p.id]?.resumen?.length)
   if (!conAn.length) return false
   const noop = () => {}
-  // con «Restar blanco» (Calidad) todo el informe va en OD corregida, salvo el ODc y la clasificación
+  // con «Restar blanco» (Revisión) todo el informe va en OD corregida, salvo el ODc y la clasificación
   const corr = !!s.restarBlanco
   const ejeDe = (p) => (corr
     ? (Number.isFinite(p.placa?.onda) ? `OD corregida a ${p.placa.onda} nm` : 'OD corregida (OD − blanco)')
@@ -134,8 +134,9 @@ export function abrirInforme(s) {
       <p class="odc"><b>ODc = ${Number.isFinite(a.odc?.odc) ? fmt(a.odc.odc, 4) : 'sin calcular'}</b>${a.odc?.n ? ` (n = ${a.odc.n} blancos aceptados)` : ''}${restada ? ` · <b>OD corregida</b> = OD leída − ${fmt(resta, 4)} (media de los blancos). El ODc y la clasificación usan la OD leída.` : corr ? ' · sin blancos aceptados: OD leída (sin restar el blanco)' : ''}</p>
       <h3>Clasificación por muestra</h3>${gBarras ? `<div class="fig">${gBarras}</div>` : ''}
       ${tabla(Object.keys(muestras[0] || { Muestra: 1 }), muestras)}
-      <h3 class="salto">Control de calidad de los pocillos</h3><div class="fig">${gExcluir}</div>
+      <h3 class="salto">Revisión de los pocillos</h3><div class="fig">${gExcluir}</div>
       ${tabla(Object.keys(pocillos[0] || { Pocillo: 1 }), pocillos)}
+      ${p.revision?.trim() ? `<h3>Comentarios</h3><p class="comentarios">${esc(p.revision.trim()).replace(/\n/g, '<br>')}</p>` : ''}
     </section>`
   })
 
@@ -167,7 +168,7 @@ export function abrirInforme(s) {
     body { font-family: 'Segoe UI', Arial, sans-serif; color: #2b2118; font-size: 11px; line-height: 1.4; }
     h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 4px; border-bottom: 2px solid #d9731f; padding-bottom: 3px; }
     h3 { font-size: 13px; margin: 14px 0 4px; color: #7a4a1c; }
-    .meta { color: #6b5d4f; margin: 2px 0 6px; } .odc { font-size: 13px; margin: 2px 0 8px; }
+    .meta { color: #6b5d4f; margin: 2px 0 6px; } .comentarios { white-space: normal; line-height: 1.5; border-left: 3px solid #c9b8a3; padding: 4px 0 4px 10px; } .odc { font-size: 13px; margin: 2px 0 8px; }
     .fig { text-align: center; page-break-inside: avoid; } .fig svg { max-width: 100%; height: auto; }
     table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; font-size: 9.5px; }
     th, td { border: 1px solid #d8cfc2; padding: 2px 5px; text-align: left; } th { background: #f6efe3; }

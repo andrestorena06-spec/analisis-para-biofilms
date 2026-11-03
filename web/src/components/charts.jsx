@@ -67,7 +67,7 @@ export const ERROR_REL = {
 export const tipoRel = (e) => (ERROR_REL[e] ? e : 'sd')   // sin barras de error: DE %
 
 // Fila con el error relativo (100 × error ÷ media) de cada columna, debajo de los nombres del eje X.
-// Con DE, en naranja si supera el límite de CV de «Calidad». items: [{ x, v, tip, corto }]
+// Con DE, en naranja si supera el límite de CV de «Revisión». items: [{ x, v, tip, corto }]
 export const ALTO_FILA_CV = 32
 export function FilaCV({ L, items, lim, size = 12, tipo = 'sd' }) {
   const y = L.top + L.plotH + 10 + L.altoEtiquetas + 12 + L.altoLeyX + 16
@@ -76,7 +76,7 @@ export function FilaCV({ L, items, lim, size = 12, tipo = 'sd' }) {
     <g>
       <line x1={L.left} x2={L.left + L.plotW} y1={y - 15} y2={y - 15} stroke="#e5ddd0" />
       <text x={L.left - 8} y={y} textAnchor="end" style={{ fontSize: 11, fill: '#6b7785' }}
-        data-tip={`${R.nombre} = 100 × ${R.sigla} ÷ media de cada columna (el mismo error que las barras)${tipo === 'sd' ? `\nEn naranja: más del ${lim} % (límite de CV de «Calidad»)` : ''}`}>{R.etq}</text>
+        data-tip={`${R.nombre} = 100 × ${R.sigla} ÷ media de cada columna (el mismo error que las barras)${tipo === 'sd' ? `\nEn naranja: más del ${lim} % (límite de CV de «Revisión»)` : ''}`}>{R.etq}</text>
       {items.map((it, i) => {
         const alto = tipo === 'sd' && Number.isFinite(it.v) && it.v > lim
         return (
@@ -102,7 +102,7 @@ export const LeyendaX = ({ L, est }) => est.leyendaX.texto ? (
 // ---------------------------------------------------------------
 // GRÁFICO DE BARRAS
 // ---------------------------------------------------------------
-// resta: blanco restado a la OD (Calidad › Restar blanco). Los umbrales de clase son de la OD leída,
+// resta: blanco restado a la OD (Revisión › Restar blanco). Los umbrales de clase son de la OD leída,
 // así que en OD corregida las líneas quedan en k × ODc − blanco.
 export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, est, eje, onContext, tam, nota, leyendaPuntos, escala, cvLim = 20, resta = 0 }, svgRef) {
   const [wrap, Wmed] = useAncho()

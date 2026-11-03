@@ -1,5 +1,5 @@
 // Nombres de las pantallas (los mismos del menú)
-export const TITULO_PASO = { resumen: 'Resumen', placas: 'Placas', pocillos: 'Pocillos', calidad: 'Calidad', odc: 'ODc y mapa', grafico: 'Gráfico', estadistica: 'Estadística', datos: 'Datos', metodos: 'Métodos' }
+export const TITULO_PASO = { resumen: 'Resumen', placas: 'Placas', pocillos: 'Pocillos', calidad: 'Revisión', odc: 'ODc y mapa', grafico: 'Gráfico', estadistica: 'Estadística', datos: 'Datos', metodos: 'Métodos' }
 
 // Avance del análisis y lo que conviene revisar (Resumen, menú lateral y barra de estado)
 const finito = Number.isFinite

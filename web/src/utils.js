@@ -236,9 +236,9 @@ export const escalaY = (L, eY) => (v) => {
   return L.top + L.plotH - Math.min(Math.max(f, 0), 1) * L.plotH
 }
 
-// Escala relativa al ODc de cada placa (botón «Escala» de Gráfico y Calidad): OD ÷ ODc, cada unidad es un ODc
+// Escala relativa al ODc de cada placa (botón «Escala» de Gráfico y Revisión): OD ÷ ODc, cada unidad es un ODc
 // y las clases quedan en 1, 2 y 4 en todas las placas. umbrales: [valor, nombre, múltiplo del ODc]
-// resta: blanco que se le restó a la OD (Calidad › Restar blanco). El ODc se calcula con la OD leída,
+// resta: blanco que se le restó a la OD (Revisión › Restar blanco). El ODc se calcula con la OD leída,
 // así que la razón se hace con la OD leída: (OD corregida + blanco) ÷ ODc.
 export const ESCALAS = {
   od: { eje: null, corto: 'OD' },

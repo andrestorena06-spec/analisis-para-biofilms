@@ -25,7 +25,7 @@ export const optsDef = () => ({
     blancos: true,
   },
   archivo: { layoutBase: '', verOcultas: false },   // layoutBase: placa cuyo layout copian las nuevas
-  blanco: { restar: false },                         // Calidad › Restar blanco: OD corregida = OD − media de los blancos
+  blanco: { restar: false },                         // Revisión › Restar blanco: OD corregida = OD − media de los blancos
 })
 export const deteccionDef = () => ({ metodo: 'q', usar: false, conf: '95', cvMax: 20 })
 // sesiones con métodos que ya no existen (Hampel, Dixon general) pasan al test Q
@@ -33,7 +33,7 @@ export const normDet = (d) => { const x = { ...deteccionDef(), ...d }; if (!['q'
 
 export const infoDef = () => ({ nombre: '', fecha: new Date().toISOString().slice(0, 10), organismo: '', responsable: '', equipo: '', temperatura: '', incubacion: '', tincion: 'Cristal violeta 0,1 %', notas: '' })
 export const placaVacia = (nombre) => ({
-  id: nuevoId(), nombre, archivo: null, placa: null, config: [], exclManual: [], exclForzado: [], blancosUsados: null, medio: '',
+  id: nuevoId(), nombre, archivo: null, placa: null, config: [], exclManual: [], exclForzado: [], blancosUsados: null, medio: '', revision: '',
 })
 
 // pantallas: las sesiones de la versión 2 usaban otros nombres
@@ -58,7 +58,7 @@ const estilosDe = (x) => ({ barras: normalizarEstilo(x?.barras), excluir: normal
 const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString('es') } catch { return '' } }
 
 const normPlaca = (p) => ({
-  exclManual: [], exclForzado: [], blancosUsados: null, config: [], medio: '', archivo: null, placa: null, ...p,
+  exclManual: [], exclForzado: [], blancosUsados: null, config: [], medio: '', revision: '', archivo: null, placa: null, ...p,
   id: p.id || nuevoId(), nombre: String(p.nombre || 'Placa'),
   config: (p.config || []).map((c) => ({ ...c, Replica: Number(c.Replica) || 1, EsBlanco: !!c.EsBlanco })),
 })

@@ -29,7 +29,7 @@ export function PasoAPaso({ s }) {
   const muestra = muestras.includes(m) ? m : muestras[0]
   const det = s.deteccion
   const odc = a.odc.odc
-  const resta = a.odc.resta || 0          // blanco restado (Calidad › Restar blanco)
+  const resta = a.odc.resta || 0          // blanco restado (Revisión › Restar blanco)
   const leida = (e) => (Number.isFinite(e.ODleida) ? e.ODleida : e.OD)
 
   // 1. punto de corte (siempre con la OD leída)
@@ -65,7 +65,7 @@ export function PasoAPaso({ s }) {
       {res && (
         <>
           <h3>2. Media y errores de «{muestra}»</h3>
-          {resta ? <p className="ayuda">Con «Restar blanco» (Calidad): OD corregida = OD leída − {f(resta)} (media de los blancos aceptados).</p> : null}
+          {resta ? <p className="ayuda">Con «Restar blanco» (Revisión): OD corregida = OD leída − {f(resta)} (media de los blancos aceptados).</p> : null}
           <Tabla cols={[...(resta ? ['Pocillo', 'Réplica', 'OD leída', 'OD corregida'] : ['Pocillo', 'Réplica', 'OD original']), 'Se resta la media', 'Diferencia', 'Diferencia al cuadrado']}
             filas={reps.map((e) => [e.Pocillo, e.Replica, ...(resta ? [f(leida(e))] : []), f(e.OD), f(es.m), f(e.OD - es.m), f((e.OD - es.m) ** 2, 6)])}
             pie={[['n (réplicas aceptadas)', es.n], ['Σ OD', f(reps.reduce((t, e) => t + e.OD, 0))], ['Media x̄ = Σ OD / n', f(es.m)], ['Σ diferencias²', f(es.ss, 6)],

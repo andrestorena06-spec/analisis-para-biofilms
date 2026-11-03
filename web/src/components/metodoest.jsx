@@ -179,7 +179,7 @@ function prepararBloques(s, D, o) {
   const libres = obj === 'libre' ? (o.libres || []).filter((c) => c.grupos.length >= 2) : []
   const nivel = obj === 'serotipos' ? (['cepa', 'placa', 'pocillo'].includes(o.nivelSero) ? o.nivelSero : 'cepa')
     : esPl || libres.some((c) => c.grupos.some(usaPlaca)) ? 'pocillo' : o.nivel || 'placa'
-  // resta: blanco restado (Calidad › Restar blanco); OD ÷ ODc se calcula con la OD leída
+  // resta: blanco restado (Revisión › Restar blanco); OD ÷ ODc se calcula con la OD leída
   const fx = (y, odc, resta = 0) => (variable === 'ln' ? (y > 0 ? Math.log(y) : NaN) : variable === 'odc' ? (odc > 0 ? (y + resta) / odc : NaN) : y)
   const obsPlaca0 = [], obsPozo0 = []
   D.conAnalisis.forEach((p) => {

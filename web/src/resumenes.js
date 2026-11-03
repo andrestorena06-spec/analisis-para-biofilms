@@ -8,7 +8,7 @@ import { seroDe, serotiposDe, valoresSerotipo } from './serotipos.js'
 const finito = Number.isFinite
 export const SIN_MEDIO = '(sin medio)'
 export const UNIDAD = { od: 'OD', ln: 'ln(OD)', odc: 'OD ÷ ODc' }
-// nombre de la variable con la OD corregida por blanco (Calidad › Restar blanco); OD ÷ ODc usa siempre la OD leída
+// nombre de la variable con la OD corregida por blanco (Revisión › Restar blanco); OD ÷ ODc usa siempre la OD leída
 export const unidadDe = (variable, corregida) => (corregida && variable === 'od' ? 'OD corregida' : corregida && variable === 'ln' ? 'ln(OD corregida)' : UNIDAD[variable] || 'OD')
 
 // Valores de cada cepa en cada placa: uno por placa (la OD media de sus pocillos aceptados) y uno por pocillo

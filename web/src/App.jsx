@@ -264,7 +264,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [placas, deteccion, avisar]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Restar blanco (ODc y mapa, Calidad, Gráfico, Estadística): todo usa la OD corregida (OD leída − media de los blancos)
+  // Restar blanco (ODc y mapa, Revisión, Gráfico, Estadística): todo usa la OD corregida (OD leída − media de los blancos)
   const restarBlanco = !!exp?.opts?.blanco?.restar
   const analisisMap = useMemo(() => (restarBlanco
     ? Object.fromEntries(Object.entries(analisisLeido).map(([id, a]) => [id, a ? corregirAnalisis(a) : a]))
@@ -475,9 +475,11 @@ export default function App() {
     archivo: activa?.archivo || null, placa: activa?.placa || null,
     config: activa?.config || [], setConfig: (c) => activa && actualizar(activa.id, { config: c }),
     blancosUsados: activa?.blancosUsados ?? null, setBlancosUsados: (b) => activa && actualizar(activa.id, { blancosUsados: b }),
+    // comentarios de la revisión de cada placa (texto libre: el análisis de quien revisa)
+    setRevision: (id, t) => actualizar(id, { revision: t }),
     analisis, ordenMuestras, ejeOD, ejeODLeida,
     // corrección por blanco: la placa activa y todas con la OD leída (para Pocillos y ODc)
-    // Restar blanco es uno solo para todo el programa (se cambia desde ODc y mapa, Calidad, Gráfico o Estadística).
+    // Restar blanco es uno solo para todo el programa (se cambia desde ODc y mapa, Revisión, Gráfico o Estadística).
     // Al activarlo, lo que estaba en OD ÷ ODc pasa a OD: esa razón se hace con la OD leída y no se vería el cambio.
     restarBlanco, setRestarBlanco: (v) => {
       const o0 = expRef.current?.opts
