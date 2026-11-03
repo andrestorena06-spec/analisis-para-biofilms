@@ -72,7 +72,6 @@ export const FUENTE = "'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans
 export const fmt = (x, d = 3) => (Number.isFinite(x) ? x.toFixed(d) : 'NA')
 const SUB = '₀₁₂₃₄₅₆₇₈₉'
 export const sub = (n) => String(n).replace(/\d/g, (d) => SUB[Number(d)])
-export const nombreReplica = (m, r) => m + sub(r)
 
 // Colores por muestra (equivalente a scales::hue_pal)
 export function paletaMuestras(muestras) {
@@ -81,24 +80,6 @@ export function paletaMuestras(muestras) {
   muestras.forEach((m, i) => {
     const h = (15 + (360 * i) / Math.max(n, 1)) % 360
     out[m] = `hsl(${h.toFixed(0)}, 62%, 52%)`
-  })
-  return out
-}
-
-// Colores de cada pocillo: tonos distintos para las réplicas de una misma muestra
-export function coloresPocillos(config) {
-  const muestras = [...new Set(config.map((c) => c.Muestra))]
-  const base = paletaMuestras(muestras)
-  const out = {}
-  muestras.forEach((m) => {
-    const reps = config.filter((c) => c.Muestra === m).sort((a, b) => a.Replica - b.Replica)
-    const k = reps.length
-    const hsl = base[m].match(/hsl\((\d+), (\d+)%, (\d+)%\)/)
-    reps.forEach((r, i) => {
-      const f = k === 1 ? 0.5 : i / (k - 1)
-      const l = 40 + 24 * f
-      out[r.Pocillo] = `hsl(${hsl[1]}, ${hsl[2]}%, ${l.toFixed(0)}%)`
-    })
   })
   return out
 }

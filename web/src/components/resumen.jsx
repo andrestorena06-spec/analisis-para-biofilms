@@ -10,7 +10,7 @@ import { nombreArchivo } from '../modelo.js'
 import { seroDe } from '../serotipos.js'
 
 const finito = Number.isFinite
-const PASOS_TRABAJO = ['placas', 'pocillos', 'odc', 'calidad', 'grafico', 'estadistica', 'datos']
+const PASOS_TRABAJO = ['placas', 'odc', 'calidad', 'grafico', 'estadistica', 'datos']
 const r4 = (x, d = 4) => (finito(x) ? Number(x.toFixed(d)) : null)
 const METODO = { q: 'Test Q de Dixon', grubbs: 'Test de Grubbs', cv: 'Coeficiente de variación' }
 
@@ -147,7 +147,7 @@ export function Resumen({ s }) {
               {exp.placas.map((p) => {
                 const a = analisisMap[p.id]
                 return (
-                  <button key={p.id} className={`mini-placa ${p.oculta ? 'oculta' : ''}`} onClick={() => { s.setActiva(p.id); s.irA('pocillos') }}
+                  <button key={p.id} className={`mini-placa ${p.oculta ? 'oculta' : ''}`} onClick={() => { s.setActiva(p.id); s.irA('odc') }}
                     data-tip={`${p.nombre}${p.medio ? ` · ${p.medio}` : ''}\n${p.placa ? `${p.placa.datos.length} pocillos con datos · ${p.config.length} configurados` : 'Sin datos'}${a && finito(a.odc?.odc) ? `\nODc = ${fmt(a.odc.odc, 4)} (n = ${a.odc.n} blancos)` : ''}${p.oculta ? '\nOculta: fuera de los cálculos' : ''}`}>
                     <i className="punto" style={{ background: colorPlaca[p.id] }} />
                     <b>{p.nombre}</b>

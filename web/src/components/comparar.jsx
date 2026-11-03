@@ -79,7 +79,7 @@ export function CompararTab({ s, grupoVista }) {
         <Grupo titulo="Columnas">
           <OpcionesCinta valor={modo} onChange={(v) => setO('modo', v)} opciones={[
             ['placas', 'Por placa', null, 'placas', D.porSero ? 'Una columna por placa: cada punto es una cepa del serotipo en esa placa' : 'Una columna por placa (la altura es la OD media de sus réplicas)'],
-            ['medio', 'Por medio', null, 'matraz', 'Una columna por medio de cultivo: las placas del mismo medio juntas (el medio se elige en «Pocillos»)'],
+            ['medio', 'Por medio', null, 'matraz', 'Una columna por medio de cultivo: las placas del mismo medio juntas (el medio se elige en «ODc y mapa»)'],
             ['todas', 'Todas', 'x̄', null, D.porSero ? 'Una columna por serotipo con todas las placas juntas, sin separar por medio' : 'Una columna por cepa con todas las placas juntas, sin separar por medio: el promedio de cada cepa en todo el experimento'],
             ...(D.porSero ? [] : [['pocillo', 'Por pocillo', null, 'puntos', 'Una columna por pocillo (sin error: un solo valor por columna)']]),
           ]} />

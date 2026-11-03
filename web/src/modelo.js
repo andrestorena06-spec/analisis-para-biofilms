@@ -37,8 +37,8 @@ export const placaVacia = (nombre) => ({
 })
 
 // pantallas: las sesiones de la versión 2 usaban otros nombres
-const TAB_VIEJA = { archivo: 'placas', placa: 'pocillos', excluir: 'calidad', analisis: 'odc', comparar: 'grafico' }
-export const PANTALLAS = ['resumen', 'placas', 'pocillos', 'calidad', 'odc', 'grafico', 'estadistica', 'datos', 'metodos']
+const TAB_VIEJA = { archivo: 'placas', placa: 'odc', pocillos: 'odc', excluir: 'calidad', analisis: 'odc', comparar: 'grafico' }
+export const PANTALLAS = ['resumen', 'placas', 'calidad', 'odc', 'grafico', 'estadistica', 'datos', 'metodos']
 const tabDe = (t) => { const x = TAB_VIEJA[t] || t; return PANTALLAS.includes(x) ? x : 'resumen' }
 
 const optsDe = (x) => {
@@ -157,6 +157,20 @@ export function renombrarMedio(exp, viejo, nuevo) {
     placas: exp.placas.map((p) => (p.medio === viejo ? { ...p, medio: nuevo } : p)),
     opts: { ...exp.opts, comparar: { ...c, eMediosFuera: c.eMediosFuera ? c.eMediosFuera.map(cambia) : c.eMediosFuera, ctrlMedio: c.ctrlMedio === viejo ? nuevo : c.ctrlMedio,
       libres: (c.libres || []).map((x) => ({ ...x, grupos: x.grupos.map((g) => ({ ...g, medio: cambiaEn(g.medio, cambia) })) })) } },
+  }
+}
+// Saca una muestra de la lista y deja libres sus pocillos en todas las placas
+export function eliminarMuestra(exp, m) {
+  const { [m]: _, ...serotipos } = exp.serotipos || {}
+  return {
+    muestras: exp.muestras.filter((x) => x !== m),
+    serotipos,
+    placas: exp.placas.map((p) => {
+      const libres = new Set(p.config.filter((c) => c.Muestra === m).map((c) => c.Pocillo))
+      if (!libres.size && !p.blancosUsados?.includes(m)) return p
+      const bl = p.blancosUsados ? p.blancosUsados.filter((x) => x !== m) : p.blancosUsados
+      return { ...p, config: p.config.filter((c) => c.Muestra !== m), exclManual: p.exclManual.filter((x) => !libres.has(x)), exclForzado: p.exclForzado.filter((x) => !libres.has(x)), blancosUsados: bl?.length ? bl : null }
+    }),
   }
 }
 export const usosMuestra = (exp, m) => exp.placas.reduce((a, p) => a + p.config.filter((c) => c.Muestra === m).length, 0)

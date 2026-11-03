@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ACEPTA_LIBRO } from './libro.js'
 import { MODO, ping } from './api.js'
-import { aArchivo, expNuevo, nombreArchivo, normalizarExp, renombrarMuestra as renMuestra } from './modelo.js'
+import { aArchivo, eliminarMuestra as sacarMuestra, expNuevo, nombreArchivo, normalizarExp, renombrarMuestra as renMuestra } from './modelo.js'
 import { listo as listoDe } from './progreso.js'
 import { elegirSesion, escribir, guardarComo as guardarComoArchivo, hayAccesoArchivos, leerManejador, recordarManejador } from './archivos.js'
 import { leer, usarRecientes } from './usarRecientes.js'
@@ -74,7 +74,7 @@ export default function App() {
     hist.current = { pasado: [], futuro: [], ultimo: 0 }
     archivosRef.current = {}
     reiniciarAnalisis()
-    setExp(n.exp); setTab(n.tab || 'resumen'); setActivaId(n.activaId || n.exp.placas[0]?.id || null); setEnArchivo(false); setMenuMovil(false)
+    setExp(n.exp); setTab(PASOS[n.tab] ? n.tab : n.tab === 'pocillos' ? 'odc' : 'resumen'); setActivaId(n.activaId || n.exp.placas[0]?.id || null); setEnArchivo(false); setMenuMovil(false)
     if (aviso) avisar(aviso)
     ;(n.avisos || []).forEach((a) => avisar(a, 'error'))
   }
@@ -210,7 +210,7 @@ export default function App() {
     // comentarios de la revisión de cada placa (texto libre: el análisis de quien revisa)
     setRevision: (id, t) => actualizar(id, { revision: t }),
     analisis, ordenMuestras, ejeOD, ejeODLeida,
-    // corrección por blanco: la placa activa y todas con la OD leída (para Pocillos y ODc)
+    // corrección por blanco: la placa activa y todas con la OD leída (para el ODc)
     // Restar blanco es uno solo para todo el programa (se cambia desde ODc y mapa, Revisión, Gráfico o Estadística).
     // Al activarlo, lo que estaba en OD ÷ ODc pasa a OD: esa razón se hace con la OD leída y no se vería el cambio.
     restarBlanco, setRestarBlanco: (v) => {
@@ -233,6 +233,7 @@ export default function App() {
       if (muestras.some((m) => m !== viejo && m.toLowerCase() === nuevo.toLowerCase())) return avisar(`Ya existe una muestra llamada «${nuevo}».`, 'error')
       upd((e) => renMuestra(e, viejo, nuevo))
     },
+    eliminarMuestra: (m) => { upd((e) => sacarMuestra(e, m)); avisar(`Muestra «${m}» eliminada (Ctrl + Z para deshacer).`) },
   }
 
   // ---------- barra de estado ----------

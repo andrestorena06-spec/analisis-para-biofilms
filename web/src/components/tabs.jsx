@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Nota } from './tip.jsx'
 import { dDE, dMedia, dODc } from '../calculos.js'
-import { Check, Campo, Modal, Vacio } from './ui.jsx'
+import { Campo, MenuContextual, Modal, Vacio, useMenuContextual } from './ui.jsx'
 import { BotonCinta, CampoCinta, Cinta, Grupo, InterruptorCinta } from './cinta.jsx'
 import { GrupoBlanco } from './blanco.jsx'
-import { CLASES, COLOR_CLASE, FILAS, aCSV, coloresPocillos, descargarTexto, fmt, nombreReplica, pocillos96 } from '../utils.js'
+import { usosMuestra } from '../modelo.js'
+import { CLASES, COLOR_CLASE, FILAS, aCSV, descargarTexto, fmt, pocillos96 } from '../utils.js'
 
 export { Vacio }
 
@@ -35,9 +36,10 @@ async function leerLayout(file, avisar) {
 }
 
 // ===============================================================
-// POCILLOS: qué muestra hay en cada pocillo, medio de la placa y layout
+// ODc Y MAPA: qué muestra hay en cada pocillo, punto de corte con los blancos y clasificación de cada pocillo.
+// Se asigna sobre el mismo mapa: los colores y los datos se actualizan a medida que se asignan las muestras.
 // ===============================================================
-export function PlacaTab({ s }) {
+export function AnalisisTab({ s }) {
   const [arr, setArr] = useState(null) // {f,c} inicio del arrastre
   const [act, setAct] = useState(null)
   const [sel, setSel] = useState(null) // pocillos seleccionados para la ventana
@@ -45,12 +47,17 @@ export function PlacaTab({ s }) {
   const [blanco, setBlanco] = useState(false)
   const [confirmar, setConfirmar] = useState(false)
   const [medioNuevo, setMedioNuevo] = useState(null)
+  const [menu, abrirMenu, cerrarMenu] = useMenuContextual()
+  const [menuM, setMenuM] = useState(null)       // muestra del menú con clic derecho
+  const [renM, setRenM] = useState(null)         // { viejo, nombre }
+  const [borrarM, setBorrarM] = useState(null)   // { m, n, k }
+  const [arrM, setArrM] = useState(null)         // muestra que se arrastra en la lista
+  const [sobreM, setSobreM] = useState(null)
   const layoutRef = useRef()
   const aTodas = useRef(false)
 
   // sin datos todavía: se pueden configurar los 96 pocillos de antemano
   const disp = useMemo(() => new Set(s.placa ? s.placa.datos.map((d) => d.Pocillo) : pocillos96()), [s.placa])
-  const cols = useMemo(() => coloresPocillos(s.config), [s.config])
   const cfgDe = (p) => s.config.find((c) => c.Pocillo === p)
   const rect = arr && act ? { f1: Math.min(arr.f, act.f), f2: Math.max(arr.f, act.f), c1: Math.min(arr.c, act.c), c2: Math.max(arr.c, act.c) } : null
   const enRect = (f, c) => rect && f >= rect.f1 && f <= rect.f2 && c >= rect.c1 && c <= rect.c2
@@ -103,12 +110,63 @@ export function PlacaTab({ s }) {
   }
   const importarLayout = async (file) => { const cfg = await leerLayout(file, s.avisar); if (cfg) s.aplicarLayout(cfg, aTodas.current) }
   const ponerMedio = (v) => (v === '__otro' ? setMedioNuevo('') : s.setMedio(s.a.id, v))
-
-  const resumen = [...new Set(s.config.map((c) => c.Muestra))].map((m) => {
-    const g = s.config.filter((c) => c.Muestra === m)
-    return { m, n: g.length, b: g.filter((c) => c.EsBlanco).length, pocillos: g.map((c) => c.Pocillo).join(', ') }
-  })
   const otrasConLayout = s.placas.filter((x) => x.id !== s.activaId && x.config.length > 0)
+
+  // ---- la lista de muestras: ordenar arrastrando, renombrar y eliminar ----
+  const todas = [...new Set([...s.muestras, ...s.config.map((c) => c.Muestra)])]
+  const moverMuestra = (mov, dest) => {
+    if (!mov || mov === dest) return
+    const sin = todas.filter((m) => m !== mov)
+    const i = sin.indexOf(dest)
+    sin.splice(todas.indexOf(mov) < todas.indexOf(dest) ? i + 1 : i, 0, mov)
+    s.setMuestras(sin)
+  }
+  const pedirBorrar = (m) => {
+    const n = usosMuestra(s.exp, m)
+    if (n) return setBorrarM({ m, n, k: s.placas.filter((p) => p.config.some((c) => c.Muestra === m)).length })
+    s.eliminarMuestra(m)
+    if (muestra === m) setMuestra('')
+  }
+  const hacerRenombre = () => {
+    const nuevo = renM.nombre.trim()
+    if (nuevo && nuevo !== renM.viejo && !todas.some((m) => m !== renM.viejo && m.toLowerCase() === nuevo.toLowerCase()) && muestra === renM.viejo) setMuestra(nuevo)
+    if (nuevo !== renM.viejo) s.renombrarMuestra(renM.viejo, nuevo)
+    setRenM(null)
+  }
+
+  // ---- el mapa ----
+  // «Restar blanco»: el mapa muestra la OD corregida (OD leída − media de los blancos). El ODc se calcula con la OD leída,
+  // así que en OD corregida los límites de clase quedan en k × ODc − blanco (la clasificación de cada pocillo no cambia)
+  const a = s.analisis
+  const corr = !!a?.blanco?.restado
+  const resta = corr ? a.odc.resta : 0
+  const odc = a?.odc?.odc
+  const finito = Number.isFinite(odc)
+  const [u1, u2, u3] = [odc - resta, 2 * odc - resta, 4 * odc - resta]
+  const datos = Object.fromEntries((s.placa?.datos || []).map((d) => [d.Pocillo, d.OD - resta]))
+  const est = Object.fromEntries((a?.estado || []).map((e) => [e.Pocillo, e]))
+  const clasif = (od) => (!finito ? null : od <= u1 ? CLASES[0] : od <= u2 ? CLASES[1] : od <= u3 ? CLASES[2] : CLASES[3])
+  const nomOD = corr ? 'OD corr.' : 'OD'
+  const categoria = (p) => {
+    if (!disp.has(p)) return 'Sin datos'
+    const c = cfgDe(p)
+    if (!c) return 'Sin asignar'
+    if (est[p] && !est[p].Usado) return 'Excluido'
+    if (c.EsBlanco) return 'Blanco'
+    return (Number.isFinite(datos[p]) && clasif(datos[p])) || 'Sin clasificar'
+  }
+  const blancos = a?.blancos || []
+  const usados = s.blancosUsados ?? blancos
+  // los blancos del ODc, siempre con la OD leída
+  const odBl = (s.analisisLeido || a)?.estado?.filter((r) => r.EsBlanco && r.Usado && usados.includes(r.Muestra)).map((r) => r.OD) || []
+  const refs = [
+    ['No productor', finito ? `${nomOD} ≤ ${fmt(u1)}` : ''],
+    ['Productor débil', finito ? `${fmt(u1)} < ${nomOD} ≤ ${fmt(u2)}` : ''],
+    ['Productor moderado', finito ? `${fmt(u2)} < ${nomOD} ≤ ${fmt(u3)}` : ''],
+    ['Productor fuerte', finito ? `${nomOD} > ${fmt(u3)}` : ''],
+    ['Blanco', 'medio sin inocular'], ['Excluido', 'fuera del análisis'], ['Sin asignar', 'pocillo libre'],
+  ]
+  const lecturas = (sel || []).filter((p) => Number.isFinite(datos[p]))
 
   return (
     <div>
@@ -140,36 +198,58 @@ export function PlacaTab({ s }) {
         <Grupo titulo="Pocillos">
           <BotonCinta icono="borrar" texto="Limpiar" peligro onClick={() => setConfirmar(true)} deshabilitado={!s.config.length} tip="Quita la configuración de todos los pocillos de esta placa" />
         </Grupo>
+        {blancos.length > 0 && (
+          <Grupo titulo="Blancos para el ODc">
+            {blancos.map((b) => <InterruptorCinta key={b} icono="matraz" texto={b} valor={usados.includes(b)} tip={`Usar los pocillos de «${b}» para el punto de corte`}
+              onChange={(v) => { const n = v ? [...usados, b] : usados.filter((x) => x !== b); if (!n.length) return s.avisar('Tiene que quedar al menos un blanco.', 'error'); s.setBlancosUsados(n) }} />)}
+          </Grupo>
+        )}
+        <GrupoBlanco s={s} />
       </Cinta>
 
       {!s.placa && <p className="aviso-caja info">Esta placa todavía no tiene datos. Podés dejar lista la configuración de los pocillos; al cargar el Excel o escribir las OD en «Placas» se procesan solos.</p>}
+      {a?.odc && (
+        <div className="grid-kpi">
+          <div className="kpi" data-tip={`Blancos aceptados\nPocillos de ${usados.join(', ') || 'blanco'} que no están excluidos`}><small>Blancos aceptados</small><b>{a.odc.n}</b></div>
+          <div className="kpi" data-tip={`Media de blancos\n${dMedia(odBl)}${corr ? '\nEs lo que se resta a cada OD (Restar blanco)' : ''}`}><small>{corr ? 'Media de los blancos · se resta' : 'Media de los blancos'}</small><b>{fmt(a.odc.media, 4)}</b></div>
+          <div className="kpi" data-tip={dDE(odBl)}><small>DE de los blancos</small><b>{fmt(a.odc.sd, 4)}</b></div>
+          <div className="kpi destacado" data-tip={a.odc.n > 1 ? dODc(odBl) : 'Punto de corte (ODc)\nHacen falta al menos 2 blancos aceptados'}><small>ODc = media + 3 × DE</small><b>{fmt(odc, 4)}</b></div>
+          {corr && finito && <div className="kpi" data-tip={`Punto de corte en OD corregida\nODc − blanco = ${fmt(odc, 4)} − ${fmt(resta, 4)} = ${fmt(u1, 4)} (= 3 × DE)\nLímites de clase en OD corregida: ${fmt(u1)} · ${fmt(u2)} · ${fmt(u3)}\n(k × ODc − blanco: la clasificación es la misma que con la OD leída)`}><small>ODc − blanco</small><b>{fmt(u1, 4)}</b></div>}
+        </div>
+      )}
+      {a && s.restarBlanco && !corr && a.odc.n === 0 && <p className="aviso-caja">Esta placa no tiene blancos aceptados: no se le puede restar el blanco y queda con la OD leída.</p>}
+      {a && !blancos.length && <p className="aviso-caja">No hay blancos en esta placa: marcá «Es un blanco» al configurar los pocillos del medio sin inocular.</p>}
+      {a && blancos.length > 0 && !finito && <p className="aviso-caja">Hacen falta al menos 2 pocillos de blanco aceptados para calcular el ODc.</p>}
+
       <section className="tarjeta">
         <div className="cabeza-tarjeta">
-          <span className="etiqueta-seccion">Placa de 96 pocillos · {s.config.length} configurados</span>
+          <span className="etiqueta-seccion">Mapa de la placa · {corr ? s.ejeOD : s.ejeODLeida} · {s.config.length} configurados</span>
           <span className="ayuda">Clic en un pocillo, o clic y arrastrá para elegir varios; clic en un número o una letra elige la columna o la fila entera.
-            <Nota>Elegí una muestra de la lista o escribí una nueva y apretá Enter: la réplica se asigna sola. Los pocillos de medio sin inocular se marcan como «blanco» (sirven para el ODc).</Nota></span>
+            <Nota>{'Elegí una muestra de la lista o escribí una nueva y apretá Enter: la réplica se asigna sola. Los pocillos de medio sin inocular se marcan como «blanco» (sirven para el ODc).\nLos pocillos se excluyen o incluyen en «Revisión».\nStepanović et al. (2000): cada muestra se clasifica con la media de sus réplicas aceptadas; acá se colorea cada pocillo con su propia OD.'}</Nota></span>
         </div>
         <div className="placa-wrap">
-          <table className="placa">
+          <table className="placa mapa">
             <thead><tr><th />{Array.from({ length: 12 }, (_, i) => <th key={i} className="enc-sel" onClick={() => abrirRect({ f1: 0, f2: 7, c1: i, c2: i })} data-tip={`Columna ${i + 1} completa`}>{i + 1}</th>)}</tr></thead>
             <tbody>
               {FILAS.map((f, fi) => (
-                <tr key={f}>
-                  <th className="enc-sel" onClick={() => abrirRect({ f1: fi, f2: fi, c1: 0, c2: 11 })} data-tip={`Fila ${f} completa`}>{f}</th>
+                <tr key={f}><th className="enc-sel" onClick={() => abrirRect({ f1: fi, f2: fi, c1: 0, c2: 11 })} data-tip={`Fila ${f} completa`}>{f}</th>
                   {Array.from({ length: 12 }, (_, ci) => {
                     const p = f + (ci + 1)
+                    const cat = categoria(p)
                     const c = cfgDe(p)
                     const ok = disp.has(p)
                     const enSel = ok && enRect(fi, ci)
+                    const conOD = Number.isFinite(datos[p])
                     return (
                       <td key={p}
                         onPointerDown={(e) => { if (e.button === 0 && ok) { if (e.pointerType === 'mouse') e.preventDefault(); setArr({ f: fi, c: ci }); setAct({ f: fi, c: ci }) } }}
                         onPointerEnter={(e) => e.pointerType === 'mouse' && arr && setAct({ f: fi, c: ci })}>
-                        <div className={`pocillo ${!ok ? 'sin-datos' : ''} ${enSel ? 'sel' : ''} ${c ? 'asig' : ''} ${c?.EsBlanco ? 'blanco' : ''}`}
-                          style={c && !enSel ? { background: cols[p] } : undefined}>
-                          {!ok ? <><b>—</b><small>{p}</small></>
-                            : c ? <><b>{nombreReplica(c.Muestra, c.Replica)}</b><small>{c.EsBlanco ? `${p} · blanco` : p}</small></>
-                              : <><b className="tenue">libre</b><small>{p}</small></>}
+                        <div className={`celda-mapa cat-${CLASES.indexOf(cat)} ${enSel ? 'sel' : ''} ${cat === 'Sin datos' ? 'sin-datos' : ''} ${cat === 'Excluido' ? 'excluido' : ''} ${cat === 'Sin asignar' || cat === 'Sin clasificar' ? 'libre' : ''}`}
+                          style={COLOR_CLASE[cat] && cat !== 'Excluido' && !enSel ? { background: COLOR_CLASE[cat] } : undefined}
+                          data-tip={ok ? `${p}${c ? ` · ${c.Muestra} R${c.Replica}` : ''}${conOD ? `\n${corr ? `OD corregida = ${fmt(datos[p], 4)} (leída ${fmt(datos[p] + resta, 4)} − blanco ${fmt(resta, 4)})` : `OD = ${fmt(datos[p], 4)}`}` : ''}\n${cat}` : undefined}>
+                          {conOD && <b>{fmt(datos[p])}</b>}
+                          {c && <><span>{c.Muestra}</span><small>R{c.Replica}</small></>}
+                          {!conOD && !c && <small>{p}</small>}
                         </div>
                       </td>
                     )
@@ -179,15 +259,11 @@ export function PlacaTab({ s }) {
             </tbody>
           </table>
         </div>
-        {resumen.length > 0 && (
-          <div className="leyenda-cepas">
-            {resumen.map((r) => (
-              <span key={r.m} data-tip={`${r.m}\n${r.n} ${r.n === 1 ? 'pocillo' : 'pocillos'}${r.b ? ` (${r.b} blanco)` : ''}: ${r.pocillos}`}>
-                <i className="punto" style={{ background: cols[s.config.find((c) => c.Muestra === r.m)?.Pocillo] }} />{r.m} <small>× {r.n}{r.b ? ' · blanco' : ''}</small>
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="leyenda-cepas">
+          {refs.map(([c, t]) => (
+            <span key={c}><i className={`punto ${c === 'Excluido' ? 'excluido' : c === 'Sin asignar' ? 'libre' : ''}`} style={COLOR_CLASE[c] && c !== 'Excluido' ? { background: COLOR_CLASE[c] } : undefined} /><b>{c}</b> {t}</span>
+          ))}
+        </div>
       </section>
 
       {sel && (
@@ -204,6 +280,15 @@ export function PlacaTab({ s }) {
             e.preventDefault()
             guardar(t.getAttribute('role') === 'option' ? t.dataset.muestra : undefined)
           }}>
+            {sel.length === 1 && lecturas.length === 1 && (
+              <dl className="datos">
+                {corr
+                  ? <><dt>OD corregida</dt><dd>{fmt(datos[sel[0]], 4)}</dd><dt>OD leída</dt><dd>{fmt(datos[sel[0]] + resta, 4)} (blanco {fmt(resta, 4)})</dd></>
+                  : <><dt>Lectura (OD)</dt><dd>{fmt(datos[sel[0]], 4)}</dd></>}
+                {est[sel[0]] && !est[sel[0]].Usado && <><dt>Estado</dt><dd>Excluido (se cambia en «Revisión»)</dd></>}
+              </dl>
+            )}
+            {sel.length > 1 && lecturas.length > 0 && <p className="ayuda lecturas-sel"><b>{corr ? 'OD corregida' : 'Lecturas'}:</b> {lecturas.map((p) => `${p} ${fmt(datos[p], 3)}`).join(' · ')}</p>}
             {sel.length > 1 && (() => {
               const cnt = {}
               let libres = 0
@@ -213,11 +298,10 @@ export function PlacaTab({ s }) {
               const varias = Object.keys(cnt).length > 1 || (Object.keys(cnt).length === 1 && libres > 0)
               return <p className={varias ? 'aviso-sel' : 'ayuda'} data-tip={`Pocillos elegidos\n${sel.join(', ')}`}>{varias ? 'La selección tiene distintas muestras: ' : 'Muestra actual: '}{partes.join(' · ')}.{varias && ' La que elijas se asigna a todos.'}</p>
             })()}
-            <Campo label="Muestra">
+            <Campo label={<>Muestra<Nota>{'Clic derecho en una muestra de la lista: renombrar o eliminar.\nArrastrala para cambiar el orden: es el de «Como en la lista» en los gráficos.'}</Nota></>}>
               <input autoFocus value={muestra} placeholder="Elegí una muestra de la lista o escribí una nueva" onChange={(e) => setMuestra(e.target.value)} />
             </Campo>
             {(() => {
-              const todas = [...new Set([...s.muestras, ...s.config.map((c) => c.Muestra)])]
               const existe = todas.some((m) => m.toLowerCase() === muestra.trim().toLowerCase())
               return (
                 <>
@@ -226,7 +310,15 @@ export function PlacaTab({ s }) {
                       const n = s.config.filter((c) => c.Muestra === m).length
                       const on = m.toLowerCase() === muestra.trim().toLowerCase()
                       return (
-                        <button key={m} role="option" data-muestra={m} aria-selected={on} className={on ? 'on' : ''} onClick={() => setMuestra(m)}>
+                        <button key={m} role="option" data-muestra={m} aria-selected={on} draggable
+                          className={`${on ? 'on' : ''} ${sobreM === m && arrM !== m ? 'sobre' : ''} ${arrM === m ? 'arrastrada' : ''}`}
+                          onClick={() => setMuestra(m)}
+                          onContextMenu={(e) => { setMenuM(m); abrirMenu(e) }}
+                          onDragStart={(e) => { setArrM(m); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', m) }}
+                          onDragOver={(e) => { if (arrM) { e.preventDefault(); setSobreM(m) } }}
+                          onDragLeave={() => setSobreM((v) => (v === m ? null : v))}
+                          onDrop={(e) => { e.preventDefault(); moverMuestra(arrM, m); setArrM(null); setSobreM(null) }}
+                          onDragEnd={() => { setArrM(null); setSobreM(null) }}>
                           <span>{m}</span>{n > 0 && <small>{n} {n === 1 ? 'pocillo' : 'pocillos'}</small>}
                         </button>
                       )
@@ -244,6 +336,24 @@ export function PlacaTab({ s }) {
           </div>
         </Modal>
       )}
+      <MenuContextual menu={menu} items={menuM ? [
+        ['Renombrar…', () => { cerrarMenu(); setRenM({ viejo: menuM, nombre: menuM }) }],
+        ['Eliminar', () => { cerrarMenu(); pedirBorrar(menuM) }],
+      ] : []} />
+      {renM && (
+        <Modal titulo="Renombrar la muestra" onClose={() => setRenM(null)} ancho={420}
+          pie={<><button onClick={() => setRenM(null)}>Cancelar</button><button className="primario" onClick={hacerRenombre}>Guardar</button></>}>
+          <Campo label="Nombre"><input autoFocus value={renM.nombre} onChange={(e) => setRenM({ ...renM, nombre: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && hacerRenombre()} /></Campo>
+          <p className="ayuda">Cambia en todas las placas y en los gráficos.</p>
+        </Modal>
+      )}
+      {borrarM && (
+        <Modal titulo="Eliminar la muestra" onClose={() => setBorrarM(null)} ancho={440}
+          pie={<><button onClick={() => setBorrarM(null)}>Cancelar</button>
+            <button className="peligro" onClick={() => { s.eliminarMuestra(borrarM.m); if (muestra === borrarM.m) setMuestra(''); setBorrarM(null) }}>Sí, eliminar</button></>}>
+          «{borrarM.m}» está en {borrarM.n} {borrarM.n === 1 ? 'pocillo' : 'pocillos'} de {borrarM.k} {borrarM.k === 1 ? 'placa' : 'placas'}. Si la eliminás, esos pocillos quedan libres (Ctrl + Z para deshacer).
+        </Modal>
+      )}
       {confirmar && (
         <Modal titulo="Limpiar la configuración" onClose={() => setConfirmar(false)} ancho={440}
           pie={<><button onClick={() => setConfirmar(false)}>Cancelar</button>
@@ -256,129 +366,6 @@ export function PlacaTab({ s }) {
           pie={<><button onClick={() => setMedioNuevo(null)}>Cancelar</button><button className="primario" onClick={() => { if (medioNuevo.trim()) s.setMedio(s.a.id, medioNuevo.trim()); setMedioNuevo(null) }}>Guardar</button></>}>
           <Campo label="Nombre del medio (por ejemplo LB, TSB, M9…)"><input autoFocus value={medioNuevo} onChange={(e) => setMedioNuevo(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && medioNuevo.trim()) { s.setMedio(s.a.id, medioNuevo.trim()); setMedioNuevo(null) } }} /></Campo>
-        </Modal>
-      )}
-    </div>
-  )
-}
-
-// ===============================================================
-// ODc Y MAPA: punto de corte con los blancos y clasificación de cada pocillo
-// ===============================================================
-export function AnalisisTab({ s }) {
-  const [det, setDet] = useState(null)
-  const a = s.analisis
-  if (!s.placa) return <Vacio titulo="Esta placa no tiene datos" texto="Cargá el Excel o escribí las OD en «Placas»." accion={<button className="primario" onClick={() => s.irA('placas')}>Ir a Placas</button>} />
-  if (!a?.estado?.length) return <Vacio titulo="Faltan los pocillos" texto="Indicá qué muestra hay en cada pocillo para ver el mapa." accion={<button className="primario" onClick={() => s.irA('pocillos')}>Ir a Pocillos</button>} />
-  // «Restar blanco»: el mapa muestra la OD corregida (OD leída − media de los blancos). El ODc se calcula con la OD leída,
-  // así que en OD corregida los límites de clase quedan en k × ODc − blanco (la clasificación de cada pocillo no cambia)
-  const corr = !!a.blanco?.restado
-  const resta = corr ? a.odc.resta : 0
-  const odc = a.odc.odc
-  const finito = Number.isFinite(odc)
-  const [u1, u2, u3] = [odc - resta, 2 * odc - resta, 4 * odc - resta]
-  const datos = Object.fromEntries(s.placa.datos.map((d) => [d.Pocillo, d.OD - resta]))
-  const est = Object.fromEntries(a.estado.map((e) => [e.Pocillo, e]))
-  const clasif = (od) => (!finito ? null : od <= u1 ? CLASES[0] : od <= u2 ? CLASES[1] : od <= u3 ? CLASES[2] : CLASES[3])
-  const nomOD = corr ? 'OD corr.' : 'OD'
-  const categoria = (p) => {
-    const od = datos[p]
-    if (!Number.isFinite(od)) return 'Sin datos'
-    const e = est[p]
-    if (!e) return 'Sin asignar'
-    if (!e.Usado) return 'Excluido'
-    if (e.EsBlanco) return 'Blanco'
-    return clasif(od) || 'Sin clasificar'
-  }
-  const blancos = a.blancos || []
-  const usados = s.blancosUsados ?? blancos
-  // los blancos del ODc, siempre con la OD leída
-  const odBl = (s.analisisLeido || a).estado.filter((r) => r.EsBlanco && r.Usado && usados.includes(r.Muestra)).map((r) => r.OD)
-  const refs = [
-    ['No productor', finito ? `${nomOD} ≤ ${fmt(u1)}` : ''],
-    ['Productor débil', finito ? `${fmt(u1)} < ${nomOD} ≤ ${fmt(u2)}` : ''],
-    ['Productor moderado', finito ? `${fmt(u2)} < ${nomOD} ≤ ${fmt(u3)}` : ''],
-    ['Productor fuerte', finito ? `${nomOD} > ${fmt(u3)}` : ''],
-    ['Blanco', 'medio sin inocular'], ['Excluido', 'fuera del análisis'], ['Sin asignar', 'pocillo libre'],
-  ]
-  const dp = det && est[det]
-
-  return (
-    <div>
-      <Cinta>
-        {blancos.length > 0 && (
-          <Grupo titulo="Blancos para el ODc">
-            {blancos.map((b) => <InterruptorCinta key={b} icono="matraz" texto={b} valor={usados.includes(b)} tip={`Usar los pocillos de «${b}» para el punto de corte`}
-              onChange={(v) => { const n = v ? [...usados, b] : usados.filter((x) => x !== b); if (!n.length) return s.avisar('Tiene que quedar al menos un blanco.', 'error'); s.setBlancosUsados(n) }} />)}
-          </Grupo>
-        )}
-        <GrupoBlanco s={s} />
-      </Cinta>
-
-      <div className="grid-kpi">
-        <div className="kpi" data-tip={`Blancos aceptados\nPocillos de ${usados.join(', ') || 'blanco'} que no están excluidos`}><small>Blancos aceptados</small><b>{a.odc.n}</b></div>
-        <div className="kpi" data-tip={`Media de blancos\n${dMedia(odBl)}${corr ? '\nEs lo que se resta a cada OD (Restar blanco)' : ''}`}><small>{corr ? 'Media de los blancos · se resta' : 'Media de los blancos'}</small><b>{fmt(a.odc.media, 4)}</b></div>
-        <div className="kpi" data-tip={dDE(odBl)}><small>DE de los blancos</small><b>{fmt(a.odc.sd, 4)}</b></div>
-        <div className="kpi destacado" data-tip={a.odc.n > 1 ? dODc(odBl) : 'Punto de corte (ODc)\nHacen falta al menos 2 blancos aceptados'}><small>ODc = media + 3 × DE</small><b>{fmt(odc, 4)}</b></div>
-        {corr && finito && <div className="kpi" data-tip={`Punto de corte en OD corregida\nODc − blanco = ${fmt(odc, 4)} − ${fmt(resta, 4)} = ${fmt(u1, 4)} (= 3 × DE)\nLímites de clase en OD corregida: ${fmt(u1)} · ${fmt(u2)} · ${fmt(u3)}\n(k × ODc − blanco: la clasificación es la misma que con la OD leída)`}><small>ODc − blanco</small><b>{fmt(u1, 4)}</b></div>}
-      </div>
-      {s.restarBlanco && !corr && a.odc.n === 0 && <p className="aviso-caja">Esta placa no tiene blancos aceptados: no se le puede restar el blanco y queda con la OD leída.</p>}
-      {!blancos.length && <p className="aviso-caja">No hay blancos en esta placa: marcá «Es un blanco» al configurar los pocillos del medio sin inocular.</p>}
-      {blancos.length > 0 && !finito && <p className="aviso-caja">Hacen falta al menos 2 pocillos de blanco aceptados para calcular el ODc.</p>}
-
-      <section className="tarjeta">
-        <div className="cabeza-tarjeta">
-          <span className="etiqueta-seccion">Mapa de la placa · {corr ? s.ejeOD : s.ejeODLeida}</span>
-          <span className="ayuda">Clic en un pocillo para ver su clasificación y excluirlo o incluirlo
-            <Nota>Stepanović et al. (2000): cada muestra se clasifica con la media de sus réplicas aceptadas; acá se colorea cada pocillo con su propia OD.</Nota></span>
-        </div>
-        <div className="placa-wrap">
-          <table className="placa mapa">
-            <thead><tr><th />{Array.from({ length: 12 }, (_, i) => <th key={i}>{i + 1}</th>)}</tr></thead>
-            <tbody>
-              {FILAS.map((f) => (
-                <tr key={f}><th>{f}</th>
-                  {Array.from({ length: 12 }, (_, ci) => {
-                    const p = f + (ci + 1)
-                    const cat = categoria(p)
-                    const e = est[p]
-                    return (
-                      <td key={p} onClick={() => Number.isFinite(datos[p]) && setDet(p)}>
-                        <div className={`celda-mapa cat-${CLASES.indexOf(cat)} ${cat === 'Sin datos' ? 'sin-datos' : ''} ${cat === 'Excluido' ? 'excluido' : ''} ${cat === 'Sin asignar' || cat === 'Sin clasificar' ? 'libre' : ''}`}
-                          style={COLOR_CLASE[cat] && cat !== 'Excluido' ? { background: COLOR_CLASE[cat] } : undefined}
-                          data-tip={Number.isFinite(datos[p]) ? `${p}${e ? ` · ${e.Muestra} R${e.Replica}` : ''}\n${corr ? `OD corregida = ${fmt(datos[p], 4)} (leída ${fmt(datos[p] + resta, 4)} − blanco ${fmt(resta, 4)})` : `OD = ${fmt(datos[p], 4)}`}\n${cat}` : undefined}>
-                          {Number.isFinite(datos[p]) && <b>{fmt(datos[p])}</b>}
-                          {e && <><span>{e.Muestra}</span><small>R{e.Replica}</small></>}
-                        </div>
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="leyenda-cepas">
-          {refs.map(([c, t]) => (
-            <span key={c}><i className={`punto ${c === 'Excluido' ? 'excluido' : c === 'Sin asignar' ? 'libre' : ''}`} style={COLOR_CLASE[c] && c !== 'Excluido' ? { background: COLOR_CLASE[c] } : undefined} /><b>{c}</b> {t}</span>
-          ))}
-        </div>
-      </section>
-
-      {det && (
-        <Modal titulo={dp ? `Pocillo ${det} · ${dp.Muestra} (réplica ${dp.Replica})` : `Pocillo ${det}`} onClose={() => setDet(null)} ancho={460}
-          pie={<><button onClick={() => setDet(null)}>Cerrar</button>
-            {dp && <button className="primario" onClick={() => { s.alternarPocillo(det); setDet(null) }}>
-              {dp.Usado ? 'Excluir este pocillo' : dp.Manual ? 'Volver a incluir' : 'Conservar pese al test'}</button>}</>}>
-          <dl className="datos">
-            {corr
-              ? <><dt>OD corregida</dt><dd>{fmt(datos[det], 4)}</dd><dt>OD leída</dt><dd>{fmt(datos[det] + resta, 4)} (blanco {fmt(resta, 4)})</dd></>
-              : <><dt>OD</dt><dd>{fmt(datos[det], 4)}</dd></>}
-            <dt>Clasificación</dt><dd>{!dp ? 'Sin muestra asignada' : dp.EsBlanco ? 'Blanco (no se clasifica)' : finito ? clasif(datos[det]) : 'Sin ODc: faltan blancos'}</dd>
-            {dp && <><dt>Estado</dt><dd>{dp.Usado ? 'Aceptado' : 'Excluido'}</dd></>}
-          </dl>
-          {dp && <p className="ayuda">{dp.Manual ? 'Excluido a mano.' : dp.Motivo || 'Aceptado: el test de valores atípicos no lo marcó (o su muestra tiene menos de 3 pocillos).'}</p>}
-          {!dp && <p className="ayuda">Para analizarlo, asignale una muestra en «Pocillos».</p>}
         </Modal>
       )}
     </div>

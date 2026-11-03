@@ -104,7 +104,7 @@ export function EditarExperimento({ s, onClose }) {
           <datalist id="sugerencias-serotipo">{SEROTIPOS_SUG.map((x) => <option key={x} value={x} />)}</datalist>
         </div>
         <div>
-          <ListaNombres titulo="Medios de cultivo" ayuda="El medio de cada placa se elige en «Pocillos». Al renombrar, cambia en todas las placas."
+          <ListaNombres titulo="Medios de cultivo" ayuda="El medio de cada placa se elige en «ODc y mapa». Al renombrar, cambia en todas las placas."
             filas={medios} setFilas={setMedios} usos={usosMd} placeholder="Agregar medio (ej.: LB)…" />
         </div>
       </div>

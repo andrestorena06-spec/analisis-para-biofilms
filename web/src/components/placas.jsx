@@ -143,7 +143,7 @@ export function PlacasVista({ s }) {
                 {s.placas.map((x) => {
                   const an = s.analisisMap[x.id]
                   return (
-                    <tr key={x.id} className={`${x.id === s.activaId ? 'elegida' : ''} ${x.oculta ? 'fuera' : ''}`}>
+                    <tr key={x.id} className={`${x.id === s.activaId ? 'elegida' : ''} ${x.oculta ? 'fuera placa-oculta' : ''}`}>
                       <td><i className="punto" style={{ background: colores[x.id] }} /> <button className="enlace" onClick={() => s.pedirRenombre(x)} data-tip="Renombrar">{x.nombre}</button>{x.oculta && <small className="ayuda"> · oculta</small>}</td>
                       <td><select value={x.medio || ''} onChange={(e) => (e.target.value === '__otro' ? setMedioNuevo({ id: x.id, nombre: '' }) : s.setMedio(x.id, e.target.value))}>
                         {opciones(x).map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></td>
@@ -160,8 +160,8 @@ export function PlacasVista({ s }) {
                       <td><div className="acciones-fila">
                         {!x.placa && <button className="chico primario" onClick={() => elegir(x.id)}><Icono n="subir" size={13} />Excel</button>}
                         <button className="chico" onClick={() => setEditor(x.id)} data-tip="Escribir o pegar las OD a mano"><Icono n="teclado" size={13} />OD</button>
-                        <button className="chico" onClick={() => { s.setActiva(x.id); s.irA('pocillos') }} data-tip="Configurar los pocillos de esta placa">Pocillos<Icono n="flecha" size={12} /></button>
-                        <button className="fantasma icono" onClick={() => s.ocultarPlaca(x.id, !x.oculta)} data-tip={x.oculta ? 'Mostrar (vuelve a los cálculos)' : 'Ocultar (queda fuera de los cálculos)'}><Icono n="ojo" size={15} /></button>
+                        <button className="chico" onClick={() => { s.setActiva(x.id); s.irA('odc') }} data-tip="Asignar los pocillos en el mapa de esta placa">Mapa<Icono n="flecha" size={12} /></button>
+                        <button className={`fantasma icono ${x.oculta ? 'ojo-apagado' : ''}`} aria-pressed={!!x.oculta} aria-label={x.oculta ? 'Mostrar placa' : 'Ocultar placa'} onClick={() => s.ocultarPlaca(x.id, !x.oculta)} data-tip={x.oculta ? 'Mostrar (vuelve a los cálculos)' : 'Ocultar (queda fuera de los cálculos)'}><Icono n={x.oculta ? 'ojoTachado' : 'ojo'} size={15} /></button>
                         <button className="fantasma icono peligro" onClick={() => s.quitarPlaca(x.id)} data-tip="Quitar la placa (Ctrl + Z para deshacer)"><Icono n="borrar" size={15} /></button>
                       </div></td>
                     </tr>

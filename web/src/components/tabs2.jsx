@@ -72,7 +72,7 @@ export function ExcluirTab({ s }) {
   const setD = (k, v) => s.setDeteccion({ ...d, [k]: v })
 
   if (!s.placa) return <Vacio titulo="Esta placa no tiene datos" texto="Cargá el Excel o escribí las OD en «Placas»." accion={<button className="primario" onClick={() => s.irA('placas')}>Ir a Placas</button>} />
-  if (!s.analisis?.estado?.length) return <Vacio titulo="Faltan los pocillos" texto="Indicá qué muestra hay en cada pocillo para revisar las réplicas." accion={<button className="primario" onClick={() => s.irA('pocillos')}>Ir a Pocillos</button>} />
+  if (!s.analisis?.estado?.length) return <Vacio titulo="Faltan los pocillos" texto="Indicá qué muestra hay en cada pocillo para revisar las réplicas." accion={<button className="primario" onClick={() => s.irA('odc')}>Ir a ODc y mapa</button>} />
   const estado = s.analisis.estado
   const odcP = s.analisis.odc?.odc
   const resta = s.analisis.odc?.resta || 0

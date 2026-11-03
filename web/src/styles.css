@@ -641,3 +641,14 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
 .tabla-puestos.con-sel-u td.num:not(.col-sel) b { color: var(--tenue); font-weight: 500; }
 .tabla-puestos.con-sel-u th.col-sel { color: var(--texto); text-decoration: underline; }
 .comentarios-rev { width: 100%; min-height: 110px; line-height: 1.5; font: inherit; }
+
+.celda-mapa.sel { background: var(--acento) !important; color: var(--sobre-acento); border-color: var(--acento-fuerte); transform: scale(.96); box-shadow: 0 0 0 3px var(--acento-suave); }
+.celda-mapa.sin-datos:hover { box-shadow: none; }
+.placa.mapa td { user-select: none; }
+.opciones-muestra button[draggable] { cursor: grab; }
+.opciones-muestra button.arrastrada { opacity: .45; }
+.opciones-muestra button.sobre { box-shadow: inset 0 2px 0 var(--acento); }
+.lecturas-sel { margin-top: 0; line-height: 1.5; max-height: 72px; overflow-y: auto; }
+tr.placa-oculta > td:not(:last-child) { opacity: .45; }
+.ojo-apagado { opacity: .55; }
+.ojo-apagado:hover { opacity: 1; }
