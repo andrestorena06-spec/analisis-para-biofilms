@@ -172,7 +172,7 @@ export function AnalisisTab({ s }) {
     <div>
       <Cinta>
         <Grupo titulo="Medio de cultivo">
-          <CampoCinta etiqueta={`Medio de «${s.a.nombre}»`} tip="Las placas con el mismo medio se agrupan solas en el gráfico de comparación y en la estadística">
+          <CampoCinta etiqueta="Medio de esta placa" tip="Las placas con el mismo medio se agrupan solas en el gráfico de comparación y en la estadística">
             <select value={s.a.medio || ''} onChange={(e) => ponerMedio(e.target.value)}>
               <option value="">(sin indicar)</option>
               {s.medios.map((m) => <option key={m} value={m}>{m}</option>)}

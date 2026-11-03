@@ -19,8 +19,7 @@ export const PASOS = {
   metodos: [TITULO_PASO.metodos, MetodosTab, 'libro'],
 }
 export const ORDEN = ['resumen', 'placas', 'odc', 'calidad', 'grafico', 'estadistica', 'datos', 'metodos']
-// los pasos que trabajan sobre la placa elegida van juntos en el menú
-export const GRUPOS = { placa: { titulo: 'Por placa', icono: 'placa', hijos: ['odc', 'calidad'] } }
-export const grupoDe = (id) => Object.keys(GRUPOS).find((g) => GRUPOS[g].hijos.includes(id))
+// los pasos que trabajan sobre la placa elegida: las migas dicen cuál es
+export const POR_PLACA = new Set(['odc', 'calidad'])
 // pantallas que muestran la barra de placas (trabajan sobre la placa activa)
 export const CON_PLACAS = new Set(['calidad', 'odc', 'grafico', 'datos', 'metodos'])
