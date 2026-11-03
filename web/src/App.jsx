@@ -9,7 +9,7 @@ import { usarHistorial } from './usarHistorial.js'
 import { usarAnalisis } from './usarAnalisis.js'
 import { accionesPlacas } from './accionesPlacas.js'
 import { CON_PLACAS, PASOS } from './components/navegacion.js'
-import { MenuLateral, Migas } from './components/menulateral.jsx'
+import { MenuLateral } from './components/menulateral.jsx'
 import { BarraPlacas } from './components/barraplacas.jsx'
 import { DialogoPlacaNueva, DialogoRenombrar } from './components/dialogosplaca.jsx'
 import { Inicio } from './components/inicio.jsx'
@@ -278,7 +278,6 @@ export default function App() {
           <div className="zona-trabajo">
             <div className="cinta" ref={setNodoCinta} />
             <main className="principal">
-              {Vista && <Migas tab={tab} activa={activa} irA={irA} />}
               <div className="pagina">
                 {avisoChrome && (
                   <div className="aviso-caja info fila">

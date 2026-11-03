@@ -208,15 +208,6 @@ export function AnalisisTab({ s }) {
       </Cinta>
 
       {!s.placa && <p className="aviso-caja info">Esta placa todavía no tiene datos. Podés dejar lista la configuración de los pocillos; al cargar el Excel o escribir las OD en «Placas» se procesan solos.</p>}
-      {a?.odc && (
-        <div className="grid-kpi">
-          <div className="kpi" data-tip={`Blancos aceptados\nPocillos de ${usados.join(', ') || 'blanco'} que no están excluidos`}><small>Blancos aceptados</small><b>{a.odc.n}</b></div>
-          <div className="kpi" data-tip={`Media de blancos\n${dMedia(odBl)}${corr ? '\nEs lo que se resta a cada OD (Restar blanco)' : ''}`}><small>{corr ? 'Media de los blancos · se resta' : 'Media de los blancos'}</small><b>{fmt(a.odc.media, 4)}</b></div>
-          <div className="kpi" data-tip={dDE(odBl)}><small>DE de los blancos</small><b>{fmt(a.odc.sd, 4)}</b></div>
-          <div className="kpi destacado" data-tip={a.odc.n > 1 ? dODc(odBl) : 'Punto de corte (ODc)\nHacen falta al menos 2 blancos aceptados'}><small>ODc = media + 3 × DE</small><b>{fmt(odc, 4)}</b></div>
-          {corr && finito && <div className="kpi" data-tip={`Punto de corte en OD corregida\nODc − blanco = ${fmt(odc, 4)} − ${fmt(resta, 4)} = ${fmt(u1, 4)} (= 3 × DE)\nLímites de clase en OD corregida: ${fmt(u1)} · ${fmt(u2)} · ${fmt(u3)}\n(k × ODc − blanco: la clasificación es la misma que con la OD leída)`}><small>ODc − blanco</small><b>{fmt(u1, 4)}</b></div>}
-        </div>
-      )}
       {a && s.restarBlanco && !corr && a.odc.n === 0 && <p className="aviso-caja">Esta placa no tiene blancos aceptados: no se le puede restar el blanco y queda con la OD leída.</p>}
       {a && !blancos.length && <p className="aviso-caja">No hay blancos en esta placa: marcá «Es un blanco» al configurar los pocillos del medio sin inocular.</p>}
       {a && blancos.length > 0 && !finito && <p className="aviso-caja">Hacen falta al menos 2 pocillos de blanco aceptados para calcular el ODc.</p>}
@@ -265,6 +256,16 @@ export function AnalisisTab({ s }) {
           ))}
         </div>
       </section>
+
+      {a?.odc && (
+        <div className="grid-kpi">
+          <div className="kpi" data-tip={`Blancos aceptados\nPocillos de ${usados.join(', ') || 'blanco'} que no están excluidos`}><small>Blancos aceptados</small><b>{a.odc.n}</b></div>
+          <div className="kpi" data-tip={`Media de blancos\n${dMedia(odBl)}${corr ? '\nEs lo que se resta a cada OD (Restar blanco)' : ''}`}><small>{corr ? 'Media de los blancos · se resta' : 'Media de los blancos'}</small><b>{fmt(a.odc.media, 4)}</b></div>
+          <div className="kpi" data-tip={dDE(odBl)}><small>DE de los blancos</small><b>{fmt(a.odc.sd, 4)}</b></div>
+          <div className="kpi destacado" data-tip={a.odc.n > 1 ? dODc(odBl) : 'Punto de corte (ODc)\nHacen falta al menos 2 blancos aceptados'}><small>ODc = media + 3 × DE</small><b>{fmt(odc, 4)}</b></div>
+          {corr && finito && <div className="kpi" data-tip={`Punto de corte en OD corregida\nODc − blanco = ${fmt(odc, 4)} − ${fmt(resta, 4)} = ${fmt(u1, 4)} (= 3 × DE)\nLímites de clase en OD corregida: ${fmt(u1)} · ${fmt(u2)} · ${fmt(u3)}\n(k × ODc − blanco: la clasificación es la misma que con la OD leída)`}><small>ODc − blanco</small><b>{fmt(u1, 4)}</b></div>}
+        </div>
+      )}
 
       {sel && (
         <Modal titulo={sel.length > 1 ? `Configurar ${sel.length} pocillos` : `Configurar el pocillo ${sel[0]}`} onClose={() => setSel(null)}

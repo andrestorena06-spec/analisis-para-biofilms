@@ -113,7 +113,7 @@ textarea { resize: vertical; }
 .lista-check.columnas { max-height: none; border: 0; padding: 0; background: transparent; columns: 200px; column-gap: 24px; }
 .lista-check.columnas .check { break-inside: avoid; }
 
-/* ---------- estructura: barra de título, menú, cinta, migas y barra de estado ---------- */
+/* ---------- estructura: barra de título, menú, cinta y barra de estado ---------- */
 .app { display: flex; flex-direction: column; height: 100%; }
 .cuerpo-app { flex: 1; display: flex; min-height: 0; }
 .zona-trabajo { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -163,12 +163,6 @@ textarea { resize: vertical; }
 .cinta-campo { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--sec); padding: 0 4px; }
 .cinta-campo input, .cinta-campo select { padding: 4px 7px; font-size: 13px; min-width: 56px; max-width: 170px; }
 
-.migas { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 6px 24px; background: color-mix(in srgb, var(--fondo) 88%, transparent); backdrop-filter: blur(4px); border-bottom: 1px solid var(--borde); font-size: 13px; }
-.migas .ruta { display: inline-flex; align-items: center; gap: 6px; color: var(--sec); }
-.migas .ruta span::after { content: '›'; margin-left: 6px; color: var(--tenue); }
-.migas .ruta b { color: var(--texto); font-weight: 600; }
-.migas .placa-migas { font-style: normal; color: var(--acento); }
-.migas .paso-n { color: var(--tenue); font-size: 12.5px; }
 .barra-estado { height: 24px; flex-shrink: 0; background: var(--barra); color: var(--barra-texto); font-size: 12.5px; display: flex; align-items: center; padding: 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* paneles que bajan desde la cinta */
@@ -504,7 +498,7 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
 
 /* ---------- impresión ---------- */
 @media print {
-  .barra-titulo, .menu-lateral, .cinta, .migas, .barra-estado, .barra-placas, .no-imprimir, .toasts { display: none !important; }
+  .barra-titulo, .menu-lateral, .cinta, .barra-estado, .barra-placas, .no-imprimir, .toasts { display: none !important; }
   .app, .cuerpo-app, .zona-trabajo { display: block; height: auto; }
   .principal { overflow: visible; background: #fff; }
   .tarjeta, .mosaico { box-shadow: none; break-inside: avoid; }
@@ -533,8 +527,6 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
   .cinta-boton svg { width: 18px; height: 18px; }
   .cinta-titulo { font-size: 10.5px; }
   .cinta-campo input, .cinta-campo select { font-size: 14px; }
-  .migas { padding: 5px 10px; }
-  .migas .paso-n, .migas .placa-migas { display: none; }
   .pagina { padding: 12px 10px 48px; }
   h1 { font-size: 19px; }
   .barra-estado { display: none; }
@@ -645,3 +637,4 @@ tr.placa-oculta > td:not(:last-child) { opacity: .45; }
 .celda-mapa span { font-size: 12.5px; font-weight: 500; }
 .celda-mapa small { font-size: 12px; opacity: .9; }
 .placa.mapa { min-width: 880px; }
+.tarjeta + .grid-kpi { margin-top: 14px; }
