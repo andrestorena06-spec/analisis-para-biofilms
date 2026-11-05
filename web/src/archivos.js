@@ -3,7 +3,7 @@
 // también funcione al retomarlo desde «Recientes». En otros navegadores «Guardar» descarga el archivo.
 const BD = 'biofilm-v3-archivos', ALMACEN = 'manejadores'
 export const hayAccesoArchivos = () => typeof window !== 'undefined' && !!window.showOpenFilePicker && !!window.showSaveFilePicker
-const TIPOS = [{ description: 'Sesión de Biofilm', accept: { 'application/json': ['.json'] } }]
+const TIPOS = [{ description: 'Sesión de Análisis para Biofilms', accept: { 'application/json': ['.json'] } }]
 
 function bd() {
   return new Promise((ok, mal) => {

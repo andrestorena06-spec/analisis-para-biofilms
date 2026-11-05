@@ -42,7 +42,7 @@ export function Inicio({ exp, archivo, recientes = [], onNuevo, onAbrir, onAbrir
       <div className="portada">
         <div>
           <span className="etiqueta-seccion">Producción de biofilm · cristal violeta</span>
-          <h1>Biofilm</h1>
+          <h1>Análisis para Biofilms</h1>
           <p className="sub">Placas de 96 pocillos leídas a 560–600 nm: punto de corte (ODc), clasificación de Stepanović, control de calidad de las réplicas,
             gráficos y comparación estadística entre cepas, medios y placas.</p>
           {MODO === 'web' && <p className="ayuda"><Icono n="escudo" size={14} style={{ verticalAlign: -2 }} /> Todo se calcula en este equipo: los archivos no se envían a ningún servidor.</p>}

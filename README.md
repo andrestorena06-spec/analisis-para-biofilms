@@ -1,4 +1,4 @@
-﻿# Biofilm – análisis de placa de 96 pocillos (versión web)
+# Análisis para Biofilms – placas de 96 pocillos (versión web)
 
 Aplicación web para analizar lecturas de densidad óptica (OD) de placas de 96 pocillos y clasificar la
 producción de biofilm según **Stepanović et al. (2000)**, *J Microbiol Methods* 40:175-179.
@@ -7,7 +7,7 @@ producción de biofilm según **Stepanović et al. (2000)**, *J Microbiol Method
 
 ## Instalar en el celular (Android, Galaxy A55)
 
-Abrí **https://andrestorena06-spec.github.io/biofilm-web/** en Chrome o Samsung Internet. Menú ⋮ › **Instalar app** (o *Agregar a pantalla de inicio*): queda un ícono «Biofilm» y se abre como una app, a pantalla completa. Después de abrirla una vez con internet también funciona **sin conexión**. Los archivos y resultados se quedan en el teléfono.
+Abrí **https://andrestorena06-spec.github.io/analisis-para-biofilms/** en Chrome o Samsung Internet. Menú ⋮ › **Instalar app** (o *Agregar a pantalla de inicio*): queda un ícono «Biofilms» y se abre como una app, a pantalla completa. Después de abrirla una vez con internet también funciona **sin conexión**. Los archivos y resultados se quedan en el teléfono.
 
 - Los Excel (.xlsx, .xls, .ods) se eligen desde el almacenamiento del teléfono o Google Drive.
 - En la placa, un toque en un pocillo lo configura; tocar una letra o un número de la placa selecciona la fila o la columna completa.
@@ -15,7 +15,7 @@ Abrí **https://andrestorena06-spec.github.io/biofilm-web/** en Chrome o Samsung
 
 ## Descargar y usar sin internet
 
-[**Biofilm_un_solo_archivo.zip**](https://andrestorena06-spec.github.io/biofilm-web/Biofilm_un_solo_archivo.zip) (110 KB): descomprimir y hacer doble clic en `Biofilm.html`.
+[**Biofilm_un_solo_archivo.zip**](https://andrestorena06-spec.github.io/analisis-para-biofilms/Biofilm_un_solo_archivo.zip) (110 KB): descomprimir y hacer doble clic en `Biofilm.html`.
 No requiere instalar nada (ni R ni Node.js) ni conexión a internet. Se abre en Edge, Chrome o Firefox.
 
 ## Qué hace

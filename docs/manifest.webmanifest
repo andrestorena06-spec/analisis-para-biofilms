@@ -1,6 +1,6 @@
 {
-  "name": "Biofilm - producción de biofilm",
-  "short_name": "Biofilm",
+  "name": "Análisis para Biofilms",
+  "short_name": "Biofilms",
   "description": "Análisis de producción de biofilm en placas de 96 pocillos: ODc, clasificación de Stepanović, control de calidad, gráficos y estadística entre cepas, medios y placas.",
   "lang": "es",
   "start_url": "./",

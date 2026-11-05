@@ -74,7 +74,7 @@ export function expNuevo(nombre) {
 
 // Abre una sesión de cualquier versión: { exp, tab, activaId, avisos }
 export function normalizarExp(x) {
-  if (!x || typeof x !== 'object') throw new Error('El archivo no es una sesión de Biofilm.')
+  if (!x || typeof x !== 'object') throw new Error('El archivo no es una sesión de Análisis para Biofilms.')
   const avisos = []
   let placas
   if (Array.isArray(x.placas)) placas = x.placas.map(normPlaca)
@@ -82,7 +82,7 @@ export function normalizarExp(x) {
     // versión 1: una sola placa y sin los datos del Excel
     placas = [{ ...placaVacia('Placa 1'), config: x.config, exclManual: x.exclManual || [], exclForzado: x.exclForzado || [], blancosUsados: x.blancosUsados ?? null }].map(normPlaca)
     avisos.push('Sesión de la primera versión: no traía los datos del Excel. Cargá el archivo de la placa en «Placas».')
-  } else throw new Error('El archivo no es una sesión de Biofilm (no tiene placas).')
+  } else throw new Error('El archivo no es una sesión de Análisis para Biofilms (no tiene placas).')
   // sin datos del experimento (versiones anteriores): la fecha es la del trabajo guardado
   const fechaGuardada = (() => { try { return new Date(x.guardado || x.fecha).toISOString().slice(0, 10) } catch { return '' } })()
   const info = { ...infoDef(), ...(x.info ? {} : { fecha: fechaGuardada }), ...(x.info || {}) }

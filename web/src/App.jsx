@@ -260,7 +260,7 @@ export default function App() {
       <div className="app">
         <header className="barra-titulo">
           <button className="titulo-boton solo-movil" onClick={() => setMenuMovil(!menuMovil)} aria-label="Menú"><Icono n={menuMovil ? 'x' : 'hamburguesa'} size={18} /></button>
-          <LogoPlaca /><b>Biofilm</b>
+          <LogoPlaca /><b>Análisis para Biofilms</b>
           {exp && <button className="titulo-exp" onClick={() => setEditar(true)} data-tip={'Datos del experimento\nNombre, fecha, condiciones, notas, muestras y medios'}>{exp.info.nombre}</button>}
           <span className="espacio" />
           {exp && <>
