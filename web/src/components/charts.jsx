@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { dBarra, dError, dGrupo } from '../calculos.js'
-import { calcularLayout, estiloTexto } from '../layout.js'
+import { anchoContenido, calcularLayout, estiloTexto, partirNota } from '../layout.js'
 import { CLASES, COLOR_CLASE, ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaValida, escalaY, fEscala, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 
 export function useAncho() {
@@ -106,7 +106,9 @@ export const LeyendaX = ({ L, est }) => est.leyendaX.texto ? (
 // así que en OD corregida las líneas quedan en k × ODc − blanco.
 export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, est, eje, onContext, tam, nota, leyendaPuntos, escala, cvLim = 20, resta = 0 }, svgRef) {
   const [wrap, Wmed] = useAncho()
-  const W = tam ? tam.w : Wmed
+  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: filas.map((f) => f.Muestra), ang: o.rotar, est, banda: 58,
+    minimo: ['No productor', 'Productor débil', 'Productor moderado', 'Productor fuerte', 'Blanco (medio sin inocular)'].reduce((s, t) => s + 38 + medir(t, 12), 24),
+    derecha: o.lineas && Number.isFinite(odc) ? medir('Productor moderado', est.clases.size, est.clases.bold, est.clases.italic) + (o.valoresClase ? 44 : 28) : 16 })
   // escala relativa al ODc de la placa: OD ÷ ODc, con las clases en 1, 2 y 4
   const esc = escalaValida(escala, odc)
   const rel = esc !== 'od'
@@ -161,11 +163,12 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
     ? Math.max(...clasesTxt.flatMap((c) => c[2].split('\n')).map((t) => medir(t, est.clases.size, est.clases.bold, est.clases.italic)))
     : 0
   const leyenda = o.color === 'clase' && Number.isFinite(odc)
+  const notaL = partirNota(nota ?? `Barras: media de las réplicas aceptadas${errTxt ? `; error: ${errTxt}` : ''}${rel ? ` · escala ${ESCALAS[esc].eje}: ${ESCALAS[esc].nota}` : resta ? ` · OD corregida = OD leída − blanco (${fmt(resta, 3)})` : ''}`, W - 24)
   const L = calcularLayout({
     W, etiquetas: labels, ang: o.rotar, est, yLabels,
     derecha: lineas ? wClases + 28 : 16,
     titulo: !!est.titulo.texto, tituloX: !!est.leyendaX.texto, altoPlot: 280 + est.valores.size * 2,
-    extraAbajo: (leyenda || hayBlanco ? 30 : 0) + (leyendaPuntos?.length ? 26 : 0) + 22 + (o.cv ? ALTO_FILA_CV : 0), fijoH: tam ? tam.h : 0,
+    extraAbajo: (leyenda || hayBlanco ? 30 : 0) + (leyendaPuntos?.length ? 26 : 0) + 8 + notaL.length * 14 + (o.cv ? ALTO_FILA_CV : 0), fijoH: tam ? tam.h : 0,
     anchoTituloY: medir(est.leyendaY.texto || eje, est.leyendaY.size, est.leyendaY.bold, est.leyendaY.italic),
   })
   const y = escalaY(L, eY)
@@ -256,7 +259,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
         })()}
 
         {(leyenda || hayBlanco) && (
-          <g transform={`translate(${L.left + L.plotW / 2},${yLeyenda})`}>
+          <g transform={`translate(${W / 2},${yLeyenda})`}>
             {(() => {
               const items = [...(leyenda ? CLASES.map((t) => [t, COLOR_CLASE[t]]) : []), ...(hayBlanco ? [['Blanco (medio sin inocular)', COLOR_BLANCO]] : [])]
               const w = items.map(([t]) => 22 + medir(t, 12) + 18)
@@ -276,7 +279,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
           </g>
         )}
         {leyendaPuntos?.length > 0 && (
-          <g transform={`translate(${L.left + L.plotW / 2},${yLeyenda + (leyenda || hayBlanco ? 26 : 0)})`}>
+          <g transform={`translate(${W / 2},${yLeyenda + (leyenda || hayBlanco ? 26 : 0)})`}>
             {(() => {
               const w = leyendaPuntos.map((p) => 20 + medir(p.nombre, 12) + 18)
               let x = -w.reduce((a, b) => a + b, 0) / 2
@@ -293,9 +296,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
             })()}
           </g>
         )}
-        <text x={L.left + L.plotW} y={L.H - 8} textAnchor="end" style={{ fontSize: 11, fill: '#6b7785' }}>
-          {nota ?? `Barras: media de las réplicas aceptadas${errTxt ? `; error: ${errTxt}` : ''}${rel ? ` · escala ${ESCALAS[esc].eje}: ${ESCALAS[esc].nota}` : resta ? ` · OD corregida = OD leída − blanco (${fmt(resta, 3)})` : ''}`}
-        </text>
+        {notaL.map((t, k) => <text key={k} x={12} y={L.H - 8 - (notaL.length - 1 - k) * 14} style={{ fontSize: 11, fill: '#6b7785' }}>{t}</text>)}
       </svg>
     </div>
   )
@@ -316,7 +317,8 @@ export function resumenGrupo(g, tipo, tv = (v) => v) {
 
 export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o, est, eje, onClickPunto, onContext, tam, odc, escala, resta = 0 }, svgRef) {
   const [wrap, Wmed] = useAncho()
-  const W = tam ? tam.w : Wmed
+  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: orden, ang: o.rotar, est, derecha: escalaValida(escala, odc) !== 'od' ? 62 : 16,
+    banda: Math.max(90, 14 * Math.max(1, ...orden.map((m) => estado.filter((e) => e.Muestra === m).length)) + 24) })
   // escalas relativas al ODc: solo cambia cómo se dibuja; los valores atípicos se buscan siempre sobre la OD leída
   const esc = escalaValida(escala, odc)
   const rel = esc !== 'od'
@@ -352,7 +354,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
     const g = porMuestra[idx[e.Muestra]]
     const k = g.indexOf(e)
     const n = g.length
-    return cx(idx[e.Muestra]) + (n > 1 ? (k - (n - 1) / 2) * Math.min(L.band * 0.12, 22) : 0)
+    return cx(idx[e.Muestra]) + (n > 1 ? (k - (n - 1) / 2) * Math.min((L.band * 0.8) / n, 22) : 0)
   }
 
   return (

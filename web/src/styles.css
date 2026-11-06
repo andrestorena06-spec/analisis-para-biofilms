@@ -299,8 +299,8 @@ table.tabla { border-collapse: separate; border-spacing: 0; width: 100%; font-si
 
 /* ---------- gráficos: «papel» blanco en los dos temas ---------- */
 .figura { background: var(--papel); border-radius: 8px; padding: 6px; border: 1px solid var(--borde); }
-.chart-wrap { width: 100%; }
-.chart-wrap svg { display: block; max-width: 100%; height: auto; }
+.chart-wrap { width: 100%; overflow-x: auto; }
+.chart-wrap svg { display: block; height: auto; }
 .qq, .flujo-decision { width: 100%; height: auto; background: #FFFDF9; border-radius: 10px; }
 .qq { max-width: 420px; }
 .flujo-decision { max-width: 720px; margin: 8px 0; }

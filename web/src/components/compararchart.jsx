@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { dBigotes, dCaja, dError, dGrupo, dMediana } from '../calculos.js'
-import { calcularLayout } from '../layout.js'
+import { anchoContenido, partirNota, calcularLayout } from '../layout.js'
 import { ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaY, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 import { ALTO_FILA_CV, ERROR_REL, EjeY, EtiquetaFondo, EtiquetasX, FilaCV, LeyendaX, Titulo, tipoRel, useAncho } from './charts.jsx'
 
@@ -28,7 +28,6 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
   const CL = conClases ? CLASES_ESC[escala] : null
   const clases = !!CL
   const [wrap, Wmed] = useAncho()
-  const W = tam ? tam.w : Wmed
   const labels = grupos.map((g) => g.etiqueta || g.muestra)
   const nmax = Math.max(1, ...grupos.map((g) => g.barras.length))
   const conErr = (b) => Number.isFinite(b.err) && b.err > 0
@@ -56,6 +55,11 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
   const wClases = clases ? Math.max(...textosC.flatMap((t) => t.split('\n')).map((t) => medir(t, estC.size, estC.bold, estC.italic))) : 0
   const yLabels = eY.ticks.map((t) => fmtTick(t, eY.paso))
 
+  // las columnas van juntas: el ancho sale de cuántas hay, y crece hacia la derecha si hacen falta más
+  const anchoCol = o.valores ? Math.max(32, ...grupos.flatMap((g) => g.barras.map((b) => medir(fmt(b.media), est.valores.size, est.valores.bold, est.valores.italic) + 8))) : 32
+  const anchoLey = leyenda.reduce((a, p) => a + 26 + medir(p.nombre, 12) + 18, 0) + 60
+  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: labels, ang: o.rotar, est, derecha: clases ? wClases + 28 : 18, banda: Math.max(60, (nmax * anchoCol) / 0.84), minimo: Math.max(480, anchoLey) })
+  const notaL = partirNota(nota, W - 24)
   const itemsLey = leyenda.map((p) => ({ ...p, w: 26 + medir(p.nombre, 12) + 18 }))
   const filasLey = []
   let fila = [], ancho = 0
@@ -69,12 +73,12 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
     W, etiquetas: labels, ang: o.rotar, est, yLabels, derecha: clases ? wClases + 28 : 18,
     titulo: !!est.titulo.texto, tituloX: !!est.leyendaX.texto,
     altoPlot: Math.round(Math.min(Math.max(W * 0.3, 280), 380)) + est.valores.size * 2,
-    extraAbajo: filasLey.length * 24 + 30 + (o.cv ? ALTO_FILA_CV : 0), fijoH: tam ? tam.h : 0,
+    extraAbajo: filasLey.length * 24 + 16 + notaL.length * 14 + (o.cv ? ALTO_FILA_CV : 0), fijoH: tam ? tam.h : 0,
     anchoTituloY: medir(est.leyendaY.texto || eje, est.leyendaY.size, est.leyendaY.bold, est.leyendaY.italic),
   })
   const y = escalaY(L, eY)
   const cx = (i) => L.left + L.band * (i + 0.5)
-  const sw = Math.max(Math.min((L.band * 0.84) / nmax, 40), 9)    // ancho de cada columna
+  const sw = Math.max(Math.min((L.band * 0.84) / nmax, anchoCol), 9)    // ancho de cada columna
   const bw = sw * 0.8
   const yLey = L.top + L.plotH + L.altoEtiquetas + L.altoLeyX + 36 + (o.cv ? ALTO_FILA_CV : 0)
   const errNom = o.errorNombre || 'error'
@@ -215,7 +219,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
             </g>
           )
         })}
-        <text x={L.left + L.plotW} y={L.H - 8} textAnchor="end" style={{ fontSize: 11, fill: '#6b7785' }}>{nota}</text>
+        {notaL.map((t, k) => <text key={k} x={12} y={L.H - 8 - (notaL.length - 1 - k) * 14} style={{ fontSize: 11, fill: '#6b7785' }}>{t}</text>)}
       </svg>
     </div>
   )
