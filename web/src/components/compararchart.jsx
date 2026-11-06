@@ -24,7 +24,7 @@ const CLASES_ESC = {
   odc: [['Productor fuerte', 4.45, '> 4'], ['Productor moderado', 3, '2 – 4'], ['Productor débil', 1.5, '1 – 2'], ['No productor', 0.5, '≤ 1']],
 }
 
-export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda, o, est, eje, onContext, tam, nota, clases: conClases, escala = 'od', unidad = 'OD', cvLim = 20 }, svgRef) {
+export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda, o, est, eje, onContext, tam, nota, clases: conClases, escala = 'od', unidad = 'OD', cvLim = 20, desplazable = false }, svgRef) {
   const CL = conClases ? CLASES_ESC[escala] : null
   const clases = !!CL
   const [wrap, Wmed] = useAncho()
@@ -58,7 +58,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
   // las columnas van juntas: el ancho sale de cuántas hay, y crece hacia la derecha si hacen falta más
   const anchoCol = o.valores ? Math.max(32, ...grupos.flatMap((g) => g.barras.map((b) => medir(fmt(b.media), est.valores.size, est.valores.bold, est.valores.italic) + 8))) : 32
   const anchoLey = leyenda.reduce((a, p) => a + 26 + medir(p.nombre, 12) + 18, 0) + 60
-  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: labels, ang: o.rotar, est, derecha: clases ? wClases + 28 : 18, banda: Math.max(60, (nmax * anchoCol) / 0.84), minimo: Math.max(480, anchoLey) })
+  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: labels, ang: o.rotar, est, derecha: clases ? wClases + 28 : 18, banda: Math.max(60, (nmax * anchoCol) / 0.84), minimo: Math.max(480, anchoLey), desplazable })
   const notaL = partirNota(nota, W - 24)
   const itemsLey = leyenda.map((p) => ({ ...p, w: 26 + medir(p.nombre, 12) + 18 }))
   const filasLey = []
@@ -90,7 +90,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
   for (let i = 1; i < posC.length; i++) { const gap = (altC[i - 1] + altC[i]) / 2 + 3; if (posC[i] - posC[i - 1] < gap) posC[i] = posC[i - 1] + gap }
 
   return (
-    <div ref={wrap} className="chart-wrap" onContextMenu={onContext}>
+    <div ref={wrap} className={`chart-wrap ${desplazable ? 'desplazable' : ''}`} onContextMenu={onContext}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${L.H}`} width={W} height={L.H} fontFamily={FUENTE}>
         <rect width={W} height={L.H} fill="#fff" />
         <Titulo W={W} est={est} />

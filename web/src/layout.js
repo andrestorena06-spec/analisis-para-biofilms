@@ -39,9 +39,10 @@ export function calcularLayout({
   }
 }
 
-// Ancho de un gráfico según lo que tiene que dibujar: las columnas quedan juntas y crece hacia la derecha si hay más.
-// Si no entra en la pantalla se desplaza de costado. Al exportar (tam) manda el tamaño elegido.
-export function anchoContenido({ tam, disponible, etiquetas, ang, est, banda, derecha = 16, minimo = 480 }) {
+// Ancho de un gráfico según lo que tiene que dibujar: las columnas quedan juntas y crece hacia la derecha si hay más,
+// hasta el ancho de la página; ahí las columnas se angostan. Solo se pasa de ese ancho si es desplazable (todos los pocillos).
+// Al exportar (tam) manda el tamaño elegido.
+export function anchoContenido({ tam, disponible, etiquetas, ang, est, banda, derecha = 16, minimo = 480, desplazable = false }) {
   if (tam) return tam.w
   const e = est.nombresX
   const a = (ang * Math.PI) / 180
@@ -50,7 +51,8 @@ export function anchoContenido({ tam, disponible, etiquetas, ang, est, banda, de
   const b = ang > 0 ? banda : Math.max(banda, Math.max(0, ...wEt) + 8)
   const sobra = ang > 0 ? (wEt[0] || 0) * Math.cos(a) + (alto * Math.sin(a)) / 2 - b / 2 + 6 : (wEt[0] || 0) / 2 - b / 2 + 6
   const izq = Math.max(14 + est.leyendaY.size * 1.3 + 10 + 40 + 8, sobra)
-  return Math.max(Math.ceil(izq + derecha + etiquetas.length * b), Math.min(minimo, disponible))
+  const w = Math.max(Math.ceil(izq + derecha + etiquetas.length * b), Math.min(minimo, disponible))
+  return desplazable ? w : Math.min(w, disponible)
 }
 
 // Nota al pie repartida en líneas que entren en el ancho del gráfico
