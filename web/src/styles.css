@@ -318,7 +318,21 @@ table.tabla { border-collapse: separate; border-spacing: 0; width: 100%; font-si
 .toast.error { border-left-color: var(--peligro); }
 .globo-info { position: fixed; z-index: 9999; pointer-events: none; background: var(--panel); color: var(--texto); border: 1px solid var(--borde2); padding: 8px 11px; border-radius: 8px; font-size: 13px; line-height: 1.5; box-shadow: var(--sombra); }
 .globo-info b { display: block; font-weight: 600; color: var(--acento-fuerte); margin-bottom: 2px; }
-.globo-cuerpo { white-space: pre-line; font-family: Consolas, 'Cascadia Mono', monospace; font-size: 12.5px; color: var(--sec); }
+.globo-cuerpo { color: var(--sec); font-size: 13px; }
+.globo-linea { white-space: pre-line; }
+.globo-sub { font-weight: 600; color: var(--texto); margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--borde); }
+.globo-cuerpo > .globo-sub:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
+.ec-grupo { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 5px 6px; margin: 5px 0; font-family: 'Cambria Math', Cambria, Georgia, serif; font-size: 15px; color: var(--texto); }
+.ec-izq { font-style: italic; text-align: right; white-space: nowrap; }
+.ec-igual { color: var(--sec); }
+.ec-der { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; font-variant-numeric: tabular-nums; }
+.ec-frac { display: inline-flex; flex-direction: column; align-items: stretch; text-align: center; line-height: 1.25; }
+.ec-frac > span { padding: 1px 5px; }
+.ec-frac > span:first-child { border-bottom: 1px solid currentColor; }
+.ec-raiz { display: inline-flex; align-items: stretch; }
+.ec-raiz > i { font-style: normal; font-size: 1.5em; line-height: 1; align-self: center; }
+.ec-raiz > span { display: inline-flex; align-items: center; gap: 0 4px; border-top: 1px solid currentColor; padding: 1px 3px 0; }
+.ec-der sub { font-size: .72em; }
 .nota { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; cursor: help; color: var(--sec); font-size: 13.5px; margin-left: 4px; font-weight: 400; }
 .nota i { font-style: normal; font-size: 13px; width: 17px; height: 17px; line-height: 15px; text-align: center; border-radius: 50%; border: 1px solid var(--borde2); background: var(--panel); color: var(--acento); }
 .nota:hover i, .nota:focus i { background: var(--acento-suave); border-color: var(--acento); color: var(--acento-fuerte); }

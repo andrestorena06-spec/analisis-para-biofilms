@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
-import { dBarra } from '../calculos.js'
+import { dBarra, dError, dGrupo } from '../calculos.js'
 import { calcularLayout, estiloTexto } from '../layout.js'
 import { CLASES, COLOR_CLASE, ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaValida, escalaY, fEscala, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 
@@ -207,9 +207,9 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
             <g key={f.Muestra}>
               <rect x={cx(i) - bw / 2} y={y(Math.max(tvB(f.Media), base))} width={bw} height={Math.max(Math.abs(y(base) - y(tvB(f.Media))), 0.5)}
                 fill={colorBarra(f)} stroke="#333" strokeWidth="0.8" strokeDasharray={f.EsBlanco ? '4 2' : undefined}
-                data-tip={(rel ? ESCALAS[esc].cuenta(f.Media, odc, resta) + '\n' : '') + dBarra(`${f.Muestra}${f.EsBlanco ? ' (blanco)' : ''} · ${resta ? 'OD corregida' : 'OD'} media = ${fmt(f.Media)}`, pts.map((q) => q.OD), o.error, f.EsBlanco ? NaN : odc, f.Clasificacion, resta)} />
+                data-tip={dBarra(`${f.Muestra}${f.EsBlanco ? ' (blanco)' : ''} · ${resta ? 'OD corregida' : 'OD'} media = ${fmt(f.Media)}`, pts.map((q) => q.OD), o.error, f.EsBlanco ? NaN : odc, f.Clasificacion, resta) + (rel ? `\n\n${ESCALAS[esc].cuenta(f.Media, odc, resta)}` : '')} />
               {Number.isFinite(e) && e > 0 && (
-                <g stroke="#111" strokeWidth="1.3">
+                <g stroke="#111" strokeWidth="1.3" data-tip={`${f.Muestra} · barra de error ± ${fmt(e)}\n${dError(o.error, pts.map((q) => q.OD))}`}>
                   {(() => { const hi = y(tv(f.Media + e)), bajo = y(Math.max(tv(f.Media - e), eY.min)); return <>
                     <line x1={cx(i)} x2={cx(i)} y1={bajo} y2={hi} />
                     <line x1={cx(i) - bw * 0.18} x2={cx(i) + bw * 0.18} y1={hi} y2={hi} />
@@ -325,6 +325,8 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
   const idx = Object.fromEntries(orden.map((m, i) => [m, i]))
   const porMuestra = orden.map((m) => estado.filter((e) => e.Muestra === m))
   const res = porMuestra.map((g) => resumenGrupo(g, o.error, tv))
+  // cómo se calculan la media y el error de una muestra, con los mismos valores que se dibujan
+  const tipGrupo = (i) => dGrupo(labels[i], porMuestra[i].filter((e) => e.Usado).map((e) => tv(e.OD)).filter(Number.isFinite), o.errores ? o.error : null)
   const textoValor = (r) => (o.errores && r.err !== null && Number.isFinite(r.err) ? `${fmt(r.m)}\n± ${fmt(r.err)}` : fmt(r.m))
 
   const valores = estado.map((e) => tv(e.OD)).filter(Number.isFinite)
@@ -367,10 +369,12 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
         ))}
 
         {res.map((r, i) => r && (o.errores || o.medias) ? (
-          <g key={'m' + i} stroke="#111" strokeWidth="1.4">
+          <g key={'m' + i} stroke="#111" strokeWidth="1.4" data-tip={tipGrupo(i)}>
+            <line x1={cx(i) - L.band * 0.28} x2={cx(i) + L.band * 0.28} y1={y(r.m)} y2={y(r.m)} stroke="transparent" strokeWidth="10" />
             <line x1={cx(i) - L.band * 0.28} x2={cx(i) + L.band * 0.28} y1={y(r.m)} y2={y(r.m)} />
             {o.errores && r.err !== null && Number.isFinite(r.err) && (
               <>
+                <line x1={cx(i)} x2={cx(i)} y1={y(r.m - r.err)} y2={y(r.m + r.err)} stroke="transparent" strokeWidth="10" />
                 <line x1={cx(i)} x2={cx(i)} y1={y(r.m - r.err)} y2={y(r.m + r.err)} />
                 <line x1={cx(i) - L.band * 0.1} x2={cx(i) + L.band * 0.1} y1={y(r.m + r.err)} y2={y(r.m + r.err)} />
                 <line x1={cx(i) - L.band * 0.1} x2={cx(i) + L.band * 0.1} y1={y(r.m - r.err)} y2={y(r.m - r.err)} />
@@ -399,7 +403,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
           if (!r) return null
           const g = porMuestra[i]
           const top = Math.max(...(o.puntos ? g.map((e) => tv(e.OD)).filter(Number.isFinite) : [r.m]), r.m + (o.errores && Number.isFinite(r.err) ? r.err : 0))
-          return <EtiquetaFondo key={i} x={cx(i)} y={y(top) - 14} est={est.valores} texto={textoValor(r)} />
+          return <g key={i} data-tip={tipGrupo(i)}><EtiquetaFondo x={cx(i)} y={y(top) - 14} est={est.valores} texto={textoValor(r)} /></g>
         })}
 
         <EtiquetasX labels={labels} cx={cx} yBase={y(eY.min)} ang={o.rotar} est={est} />

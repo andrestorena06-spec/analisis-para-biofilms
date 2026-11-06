@@ -3,6 +3,7 @@ import { Nota } from './tip.jsx'
 import { Select, Vacio } from './ui.jsx'
 import { Chip, Hip, MatrizP, NOMBRE_TEST, Tabla, f, hipotesisGrupos, lecturaDe, pTxt } from './pruebas.jsx'
 import { desvio, marcaSig, media } from '../estadistica.js'
+import { dDE, dMedia } from '../calculos.js'
 import { fmtTick, ticksBonitos } from '../utils.js'
 
 const finito = Number.isFinite
@@ -64,7 +65,7 @@ function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
           <g key={i}>
             {i % 2 === 1 && <rect x={cx - band / 2} y={m.t} width={band} height={H - m.t - m.b} fill="#FBF3E6" opacity=".7" />}
             {finito(mu) && (
-              <g data-tip={`${g.nombre}\nx̄ = ${f(mu, 4)}${g.v.length > 1 ? `\nDE = ${f(sd, 4)}` : ''}\nn = ${g.v.length}`}>
+              <g data-tip={`${g.nombre}\n${dMedia(g.v)}${g.v.length > 1 ? `\n\n${dDE(g.v)}` : ''}`}>
                 {sd > 0 && <g stroke="#3A2005" strokeWidth="1.3"><line x1={cx} x2={cx} y1={y(mu - sd)} y2={y(mu + sd)} /><line x1={cx - 7} x2={cx + 7} y1={y(mu + sd)} y2={y(mu + sd)} /><line x1={cx - 7} x2={cx + 7} y1={y(mu - sd)} y2={y(mu - sd)} /></g>}
                 <line x1={cx - Math.min(band * 0.32, 34)} x2={cx + Math.min(band * 0.32, 34)} y1={y(mu)} y2={y(mu)} stroke="#A8650F" strokeWidth="3" strokeLinecap="round" />
               </g>

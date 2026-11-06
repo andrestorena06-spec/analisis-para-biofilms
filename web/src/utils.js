@@ -1,3 +1,4 @@
+import { ec, fr, tit } from './ecuacion.js'
 export const FILAS = 'ABCDEFGH'.split('')
 export const pocillos96 = () => FILAS.flatMap((f) => Array.from({ length: 12 }, (_, i) => f + (i + 1)))
 
@@ -232,8 +233,8 @@ export const ESCALAS = {
     eje: 'OD ÷ ODc', corto: 'OD ÷ ODc', f: (od, odc, resta = 0) => (Number.isFinite(od) && odc > 0 ? (od + (resta || 0)) / odc : NaN),
     umbrales: [[1, 'ODc', 1], [2, '2 × ODc', 2], [4, '4 × ODc', 4]], nota: '1 = ODc, 2 = 2 × ODc, 4 = 4 × ODc',
     cuenta: (od, odc, resta = 0) => (resta
-      ? `OD ÷ ODc = (OD corregida + blanco) ÷ ODc\n= (${od.toFixed(4)} + ${resta.toFixed(4)}) ÷ ${odc.toFixed(4)} = ${((od + resta) / odc).toFixed(3)}`
-      : `OD ÷ ODc = ${od.toFixed(4)} ÷ ${odc.toFixed(4)} = ${(od / odc).toFixed(3)}`),
+      ? `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr('OD corregida + blanco', 'ODc'), fr(`${od.toFixed(4)} + ${resta.toFixed(4)}`, odc.toFixed(4)), ((od + resta) / odc).toFixed(3))}`
+      : `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr(od.toFixed(4), odc.toFixed(4)), (od / odc).toFixed(3))}`),
   },
 }
 // la escala que se puede usar con ese ODc (sin ODc, OD)

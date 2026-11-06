@@ -1,5 +1,46 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { siglaBajo } from '../siglas.js'
+
+// Dibuja el texto marcado con ecuacion.js: fracciones, raíces y subíndices
+function trozos(s) {
+  let pos = 0
+  const leer = (fin) => {
+    const out = []
+    while (pos < s.length) {
+      const k = s.indexOf('⟦', pos)
+      if (k < 0) { out.push(s.slice(pos)); pos = s.length; break }
+      if (k > pos) out.push(s.slice(pos, k))
+      const m = s[k + 1]
+      pos = k + 3
+      if (m === '.' || m === '|') { if (fin.includes(m)) return out; continue }
+      if (m === 'f') {
+        const num = leer(['|']), den = leer(['.'])
+        out.push(<span className="ec-frac" key={k}><span>{num}</span><span>{den}</span></span>)
+      } else if (m === 'r') out.push(<span className="ec-raiz" key={k}><i>√</i><span>{leer(['.'])}</span></span>)
+      else if (m === 's') out.push(<sub key={k}>{leer(['.'])}</sub>)
+    }
+    return out
+  }
+  return leer([])
+}
+// El cuerpo del globo: las ecuaciones seguidas van en una grilla con los «=» alineados
+function Cuerpo({ lineas }) {
+  const out = []
+  let eqs = []
+  const cerrar = () => { if (eqs.length) { out.push(<div className="ec-grupo" key={out.length}>{eqs}</div>); eqs = [] } }
+  lineas.forEach((l, i) => {
+    if (l.startsWith('⟦e⟧')) {
+      const [izq, der] = l.slice(3).split('⟦=⟧')
+      eqs.push(<span key={i + 'i'} className="ec-izq">{izq}</span>, <span key={i + 'q'} className="ec-igual">=</span>, <span key={i + 'd'} className="ec-der">{trozos(der)}</span>)
+      return
+    }
+    cerrar()
+    if (l.startsWith('⟦t⟧')) out.push(<div className="globo-sub" key={out.length}>{l.slice(3)}</div>)
+    else if (l.trim()) out.push(<div className="globo-linea" key={out.length}>{l}</div>)
+  })
+  cerrar()
+  return <div className="globo-cuerpo">{out}</div>
+}
 
 // Información al pasar el mouse, inmediata y en todos lados:
 //  · cualquier elemento con data-tip="texto" (también dentro de gráficos SVG) muestra un globo con ese texto;
@@ -57,16 +98,22 @@ export function GloboInfo() {
       document.removeEventListener('mousedown', salir); window.removeEventListener('scroll', salir, true)
     }
   }, [])
+  // abajo del cursor si entra; si no, arriba; y nunca fuera de la ventana
+  useLayoutEffect(() => {
+    const el = caja.current
+    if (!el || !t) return
+    const h = el.offsetHeight, H = window.innerHeight
+    el.style.top = `${t.y + 16 + h + 8 <= H ? t.y + 16 : Math.max(8, Math.min(t.y - h - 12, H - h - 8))}px`
+  }, [t])
   if (!t) return null
   const [tit, ...resto] = t.txt.split('\n')
-  const W = window.innerWidth, H = window.innerHeight
-  const ancho = 340
-  const left = Math.min(Math.max(8, t.x + 14), W - ancho - 8)
-  const abajo = t.y + 16 + 200 < H
+  const conEc = t.txt.includes('⟦e⟧')
+  const ancho = conEc ? 420 : 340
+  const left = Math.min(Math.max(8, t.x + 14), window.innerWidth - ancho - 8)
   return (
-    <div ref={caja} className="globo-info" style={{ left, top: abajo ? t.y + 16 : undefined, bottom: abajo ? undefined : H - t.y + 12, maxWidth: ancho }}>
-      <b>{tit}</b>
-      {resto.length > 0 && <div className="globo-cuerpo">{resto.join('\n')}</div>}
+    <div ref={caja} className="globo-info" style={{ left, maxWidth: ancho }}>
+      <b>{tit.replace('⟦t⟧', '')}</b>
+      {resto.length > 0 && <Cuerpo lineas={resto} />}
     </div>
   )
 }

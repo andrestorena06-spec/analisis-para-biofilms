@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { dBigotes, dCaja, dError, dMedia, dMediana } from '../calculos.js'
+import { dBigotes, dCaja, dError, dGrupo, dMediana } from '../calculos.js'
 import { calcularLayout } from '../layout.js'
 import { ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaY, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 import { ALTO_FILA_CV, ERROR_REL, EjeY, EtiquetaFondo, EtiquetasX, FilaCV, LeyendaX, Titulo, tipoRel, useAncho } from './charts.jsx'
@@ -114,15 +114,16 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
                 const arriba = cima(b)
                 const cab = `${nom} · ${b.placa}`
                 const V = (x) => fmt(x)
+                const tipColumna = (c, t) => dGrupo(t, c.vp || c.pts, o.barrasError && conErr(c) ? o.errorTipo : null)
                 return (
                   <g key={b.id}>
                     {o.barras && (
                       <rect x={mx - bw / 2} y={y(Math.max(b.media, 0))} width={bw} height={Math.max(Math.abs(y(0) - y(b.media)), 0.5)} rx="2"
                         fill={b.color} fillOpacity={o.caja ? 0.3 : 0.92} stroke={b.color} strokeWidth="1"
-                        data-tip={`${cab}\n${dMedia(b.vp || b.pts)}`} />
+                        data-tip={tipColumna(b, cab)} />
                     )}
                     {o.barras && o.barrasError && conErr(b) && (
-                      <g stroke="#222" strokeWidth="1.4" data-tip={`${cab}\nBarra de error: ± ${V(b.err)} (${errNom})\n${o.errorTipo ? dError(o.errorTipo, b.vp || b.pts) : ''}\nva de ${V(b.media - b.err)} a ${V(b.media + b.err)}`}>
+                      <g stroke="#222" strokeWidth="1.4" data-tip={`${cab}\nBarra de error: ± ${V(b.err)} (${errNom})\n${o.errorTipo ? dError(o.errorTipo, b.vp || b.pts) : ''}${o.errorTipo === 'ic95' ? '' : `\nva de ${V(b.media - b.err)} a ${V(b.media + b.err)}`}`}>
                         <line x1={mx} x2={mx} y1={y(Math.max(b.media - b.err, eY.min))} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.2} x2={mx + bw * 0.2} y1={y(b.media + b.err)} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.2} x2={mx + bw * 0.2} y1={y(Math.max(b.media - b.err, eY.min))} y2={y(Math.max(b.media - b.err, eY.min))} />
@@ -144,7 +145,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
                         data-tip={`${cab}\n${dMediana(b.pts)}`} />
                     )}
                     {o.media && (
-                      <path d={`M${mx - 5},${y(b.media)} L${mx},${y(b.media) - 5} L${mx + 5},${y(b.media)} L${mx},${y(b.media) + 5} Z`} fill="#fff" stroke="#222" strokeWidth="1.2" data-tip={`${cab}\n${dMedia(b.vp || b.pts)}`} />
+                      <path d={`M${mx - 5},${y(b.media)} L${mx},${y(b.media) - 5} L${mx + 5},${y(b.media)} L${mx},${y(b.media) + 5} Z`} fill="#fff" stroke="#222" strokeWidth="1.2" data-tip={tipColumna(b, cab)} />
                     )}
                     {o.puntos && puntos.map((p, j) => (
                       <circle key={j} cx={mx + (puntos.length > 1 ? (((j * 0.6180339) % 1) - 0.5) * bw * 0.56 : 0)} cy={y(p.v)} r="3.6"
