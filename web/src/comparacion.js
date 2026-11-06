@@ -1,6 +1,6 @@
 import { resumenBlancos } from './blancos.js'
 import { resumenGrupo } from './estadistica.js'
-import { ESCALAS, paletaMuestras } from './utils.js'
+import { ESCALAS, dec, paletaMuestras } from './utils.js'
 import { seroDe, serotiposDe } from './serotipos.js'
 
 // aclara un color hsl(h, s%, l%) (f de 0 a 1): los tonos de una familia, uno por placa
@@ -41,7 +41,7 @@ export function armarComparacion(s) {
   const sinOdc = rel ? conAnalisis.filter((p) => !fueraPl.has(p.id) && !(odcDe(p) > 0)) : []
   const sel0 = conAnalisis.filter((p) => !fueraPl.has(p.id) && !sinOdc.includes(p))
   const tv = rel ? (p, v) => ESCALAS[escala].f(v, odcDe(p), restaDe(p)) : (p, v) => v
-  const V = (p, v) => (rel ? `${tv(p, v).toFixed(3)} (OD ${(v + restaDe(p)).toFixed(3)})` : v.toFixed(3))
+  const V = (p, v) => (rel ? `${dec(tv(p, v))} (OD ${dec(v + restaDe(p))})` : dec(v))
   // las placas se ordenan por medio de cultivo (las del mismo medio quedan juntas)
   const ordenMedios = [...new Set(s.placas.map((p) => p.medio || ''))].filter(Boolean)
   const placasSel = [...sel0].sort((a, b) => (a.medio ? ordenMedios.indexOf(a.medio) : 999) - (b.medio ? ordenMedios.indexOf(b.medio) : 999))
@@ -124,7 +124,7 @@ export function armarComparacion(s) {
     else detalle = [...new Set(pares.map((x) => x.c))].map((c) => {
       const vs = pares.filter((x) => x.c === c).map((x) => tv(x.p, x.r.Media))
       const v = vs.reduce((a, b) => a + b, 0) / vs.length
-      return { v, color: colorCepa[c], tip: `${c}: ${v.toFixed(3)}${vs.length > 1 ? ` (media de ${vs.length} placas)` : ''}` }
+      return { v, color: colorCepa[c], tip: `${c}: ${dec(v)}${vs.length > 1 ? ` (media de ${vs.length} placas)` : ''}` }
     })
     const valores = detalle.map((d) => d.v)
     const rg = resumenGrupo(valores)

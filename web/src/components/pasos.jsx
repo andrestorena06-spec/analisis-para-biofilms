@@ -5,7 +5,7 @@ import { detectarCV, detectarGrubbs, detectarQ } from '../motor.js'
 import { media } from '../estadistica.js'
 import { estad } from '../calculos.js'
 
-const f = (x, d = 4) => (Number.isFinite(x) ? x.toFixed(d) : x === Infinity ? '∞' : '–')
+const f = (x, d = 4) => (Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : x === Infinity ? '∞' : '–')
 
 function Tabla({ cols, filas, pie }) {
   return (
@@ -69,7 +69,7 @@ export function PasoAPaso({ s }) {
           <Tabla cols={[...(resta ? ['Pocillo', 'Réplica', 'OD leída', 'OD corregida'] : ['Pocillo', 'Réplica', 'OD original']), 'Se resta la media', 'Diferencia', 'Diferencia al cuadrado']}
             filas={reps.map((e) => [e.Pocillo, e.Replica, ...(resta ? [f(leida(e))] : []), f(e.OD), f(es.m), f(e.OD - es.m), f((e.OD - es.m) ** 2, 6)])}
             pie={[['n (réplicas aceptadas)', es.n], ['Σ OD', f(reps.reduce((t, e) => t + e.OD, 0))], ['Media x̄ = Σ OD / n', f(es.m)], ['Σ diferencias²', f(es.ss, 6)],
-              ['DE = √(Σ / (n − 1))', f(es.sd)], ['SEM = DE / √n', f(es.sem)], [`t(0.975; ${es.n - 1})`, f(es.t, 3)], ['IC 95 % = t × SEM', f(es.ic)],
+              ['DE = √(Σ / (n − 1))', f(es.sd)], ['SEM = DE / √n', f(es.sem)], [`t(0,975; ${es.n - 1})`, f(es.t, 3)], ['IC 95 % = t × SEM', f(es.ic)],
               ['CV = 100 × DE / x̄ (%)', f(es.cv, 2)], ...(Number.isFinite(odc) ? [[resta ? `OD / ODc = (x̄ + ${f(resta)}) / ODc (con la OD leída)` : 'OD / ODc', f((es.m + resta) / odc, 2)], [`Umbrales (OD leída): ODc ${f(odc)} · 2×ODc ${f(2 * odc)} · 4×ODc ${f(4 * odc)}`, res.Clasificacion || '–']] : [])]} />
 
           <h3>3. Valores atípicos de «{muestra}» ({det.metodo === 'grubbs' ? 'test de Grubbs' : det.metodo === 'cv' ? 'coeficiente de variación' : 'test Q de Dixon'}{resta ? ', con la OD leída' : ''})</h3>

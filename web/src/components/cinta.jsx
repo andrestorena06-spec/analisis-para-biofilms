@@ -22,7 +22,7 @@ export const Grupo = ({ titulo, children, tip }) => (
 // Botón grande con ícono y texto
 export const BotonCinta = ({ icono, texto, onClick, activo, deshabilitado, tip, peligro, simbolo }) => (
   <button className={`cinta-boton ${activo ? 'on' : ''} ${peligro ? 'peligro' : ''}`} onClick={onClick} disabled={deshabilitado} data-tip={tip} aria-pressed={activo === undefined ? undefined : !!activo}>
-    {simbolo ? <span className="simbolo">{simbolo}</span> : <Icono n={icono} size={20} />}
+    {simbolo ? (simbolo !== texto && <span className="simbolo">{simbolo}</span>) : <Icono n={icono} size={20} />}
     <span>{texto}</span>
   </button>
 )
@@ -40,6 +40,12 @@ export const InterruptorCinta = ({ icono, simbolo, texto, valor, onChange, tip, 
 // Campo chico dentro de la cinta (número o lista)
 export const CampoCinta = ({ etiqueta, children, tip }) => (
   <label className="cinta-campo" data-tip={tip}><span>{etiqueta}</span>{children}</label>
+)
+
+// Botón de la cinta que abre el panel con el resto de las opciones de la pantalla
+// (queda fijo a la derecha, aunque la cinta no entre en una ventana angosta)
+export const BotonOpciones = ({ activo, onClick, tip, children }) => (
+  <div className="cinta-fija"><Grupo titulo="Más">{children}<BotonCinta simbolo="⋯" texto="Opciones" activo={activo} onClick={onClick} tip={tip} /></Grupo></div>
 )
 
 // Panel desplegable que baja desde la cinta (ajustes que no entran en ella)

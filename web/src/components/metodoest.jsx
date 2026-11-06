@@ -11,8 +11,8 @@ import { anovaTabla, desvio, holm, marcaSig, media, varianza } from '../estadist
 import { chi2Sup, qnorm, rangos, shapiro } from '../reproducibilidad.js'
 
 const finito = Number.isFinite
-const f = (x, d = 4) => (finito(x) ? x.toFixed(d) : x === Infinity ? '∞' : '–')
-const pTxt = (p) => (!finito(p) ? '–' : p < 0.0001 ? '< 0.0001' : p.toFixed(4))
+const f = (x, d = 4) => (finito(x) ? x.toFixed(d).replace('.', ',') : x === Infinity ? '∞' : '–')
+const pTxt = (p) => (!finito(p) ? '–' : p < 0.0001 ? '< 0,0001' : p.toFixed(4).replace('.', ','))
 const NOMBRE = { anova: 'ANOVA clásico', welch: 'ANOVA de Welch', kw: 'Kruskal-Wallis' }
 const NOM_PARES = { anova: 't con varianza común', welch: 't de Welch', kw: 'Dunn' }
 

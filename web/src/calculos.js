@@ -3,7 +3,7 @@ import { ec, fr, rz, sb, tit } from './ecuacion.js'
 
 // Desarrollo paso a paso de cada número, con los valores reales, para mostrar al pasar el mouse (data-tip).
 // Cada función devuelve texto: un título y el desarrollo, con las ecuaciones marcadas como en ecuacion.js.
-export const F = (x, d = 3) => (Number.isFinite(x) ? x.toFixed(d) : '–')
+export const F = (x, d = 3) => (Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '–')
 const suma = (v) => v.reduce((a, b) => a + b, 0)
 const lista = (v) => (v.length > 6 ? `${v.slice(0, 5).map((x) => F(x)).join(' + ')} + … (${v.length} valores)` : v.map((x) => F(x)).join(' + '))
 
@@ -33,7 +33,7 @@ export const dSEM = (v) => {
 }
 export const dIC = (v) => {
   const e = estad(v)
-  return e.n < 2 ? `${tit('IC 95 %')}\nNecesita n ≥ 2` : `${tit('Intervalo de confianza 95 % (±)')}\n${ec('IC', `t${sb('0.975; n−1')} × SEM`, `${F(e.t, 3)} × ${F(e.sem, 4)}`, F(e.ic, 4))}\nt de Student con ${e.n - 1} gl\nva de ${F(e.m - e.ic, 3)} a ${F(e.m + e.ic, 3)}`
+  return e.n < 2 ? `${tit('IC 95 %')}\nNecesita n ≥ 2` : `${tit('Intervalo de confianza 95 % (±)')}\n${ec('IC', `t${sb('0,975; n−1')} × SEM`, `${F(e.t, 3)} × ${F(e.sem, 4)}`, F(e.ic, 4))}\nt de Student con ${e.n - 1} gl\nva de ${F(e.m - e.ic, 3)} a ${F(e.m + e.ic, 3)}`
 }
 export const dCV = (v) => {
   const e = estad(v)

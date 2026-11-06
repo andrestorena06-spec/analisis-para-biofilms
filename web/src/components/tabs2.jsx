@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart, ERROR_REL, ExcluirChart, tipoRel } from './charts.jsx'
 import { Check, EstiloDialog, MenuContextual, Num, RangoDialog, Select, Vacio, tamDe, useMenuContextual } from './ui.jsx'
-import { BotonCinta, Cajon, CampoCinta, Cinta, Grupo, InterruptorCinta, OpcionesCinta } from './cinta.jsx'
+import { BotonCinta, BotonOpciones, Cajon, CampoCinta, Cinta, Grupo, InterruptorCinta, OpcionesCinta } from './cinta.jsx'
 import { Icono } from './iconos.jsx'
 import { ExportDialog } from './exportar.jsx'
 import { dCV, dClase, dDE, dIC, dMedia, dRazon, dSEM } from '../calculos.js'
@@ -14,7 +14,7 @@ import { resumenBlancos } from '../blancos.js'
 import { excelDe } from '../api.js'
 import { Q_TABLA } from '../criticos.js'
 import { criticoGrubbs, normalizarMetodo } from '../motor.js'
-import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, estiloDefecto, fmt, t95 } from '../utils.js'
+import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, coma, estiloDefecto, fmt, t95 } from '../utils.js'
 import { textoBlanco } from '../correccion.js'
 import { seroDe } from '../serotipos.js'
 import { BotonBlanco, GrupoBlanco } from './blanco.jsx'
@@ -66,6 +66,7 @@ export function ExcluirTab({ s }) {
   const [dlg, setDlg] = useState(false)
   const [rng, setRng] = useState(false)
   const [exp, setExp] = useState(false)
+  const [mas, setMas] = useState(false)
   const o = s.opts.excluir
   const setO = (k, v) => s.setOpts((x) => ({ ...x, excluir: { ...x.excluir, [k]: v } }))
   const d = { ...s.deteccion, metodo: normalizarMetodo(s.deteccion.metodo) }
@@ -112,11 +113,18 @@ export function ExcluirTab({ s }) {
           <InterruptorCinta simbolo="x̄" texto="Media" valor={o.medias} onChange={(v) => setO('medias', v)} tip="Valor medio escrito sobre cada muestra" />
           <InterruptorCinta simbolo="±" texto="Error" valor={o.errores} onChange={(v) => setO('errores', v)} tip="Agrega el error junto al valor medio" />
           <CampoCinta etiqueta="Error"><Select value={o.error} onChange={(v) => setO('error', v)} opciones={ERRORES} /></CampoCinta>
+        </Grupo>
+        <BotonOpciones activo={mas} onClick={() => setMas(!mas)} tip="Orden, rotación e imagen" />
+      </Cinta>
+      <Cajon titulo="Más opciones" abierto={mas} onClose={() => setMas(false)}>
+        <div className="cajon-grupos">
+        <Grupo titulo="Mostrar">
           <CampoCinta etiqueta="Orden" tip="Orden de las muestras: el de la lista o por la media de sus pocillos aceptados"><Select value={o.orden || 'lista'} onChange={(v) => setO('orden', v)} opciones={[['lista', 'Como en la lista'], ['asc', 'OD creciente'], ['desc', 'OD decreciente']]} /></CampoCinta>
           <CampoCinta etiqueta="Rotación (°)"><Num value={o.rotar} min={0} max={90} ancho={56} onChange={(v) => setO('rotar', v === '' ? 0 : v)} /></CampoCinta>
         </Grupo>
         <GrupoImagen onGuardar={() => setExp(true)} onEstilo={() => setDlg(true)} onRango={() => setRng(true)} />
-      </Cinta>
+        </div>
+      </Cajon>
 
       <section className="tarjeta">
         <div className="cabeza-tarjeta">
@@ -164,6 +172,7 @@ export function GraficoTab({ s, grupoVista }) {
   const [dlg, setDlg] = useState(false)
   const [rng, setRng] = useState(false)
   const [exp, setExp] = useState(false)
+  const [mas, setMas] = useState(false)
   const [cajon, setCajon] = useState(false)
   const o = s.opts.barras
   const setO = (k, v) => s.setOpts((x) => ({ ...x, barras: { ...x.barras, [k]: v } }))
@@ -191,25 +200,32 @@ export function GraficoTab({ s, grupoVista }) {
         {grupoVista}
         <Grupo titulo="Datos">
           <BotonCinta icono="filtro" texto={`Muestras ${selMuestras.length}/${todas.length}`} activo={cajon} onClick={() => setCajon(!cajon)} tip="Elegir qué muestras se dibujan" />
-          <InterruptorCinta icono="matraz" texto="Blancos" valor={verBlancos} onChange={(v) => setO('blancos', v)} tip="Mostrar también los blancos (medio sin inocular)" />
-          <CampoCinta etiqueta="Orden"><Select value={o.orden} onChange={(v) => setO('orden', v)} opciones={[['lista', 'Como en la lista'], ['asc', 'OD creciente'], ['desc', 'OD decreciente']]} /></CampoCinta>
         </Grupo>
         <Grupo titulo="Ajustes">
           <BotonBlanco s={s} />
           <CampoCinta etiqueta="Error"><Select value={o.error} onChange={(v) => setO('error', v)} opciones={[...ERRORES, ['ninguno', 'Ninguno']]} /></CampoCinta>
-          <CampoCinta etiqueta="Color"><Select value={o.color} onChange={(v) => setO('color', v)} opciones={[['clase', 'Según la clase'], ['uno', 'Un solo color']]} /></CampoCinta>
-          <CampoCinta etiqueta="Rotación (°)"><Num value={o.rotar} min={0} max={90} ancho={56} onChange={(v) => setO('rotar', v === '' ? 0 : v)} /></CampoCinta>
         </Grupo>
         <Grupo titulo="Mostrar">
           <InterruptorCinta icono="puntos" texto="Réplicas" valor={o.puntos} onChange={(v) => setO('puntos', v)} tip="Un punto por pocillo aceptado" />
           <InterruptorCinta simbolo="x̄" texto="Media" valor={o.medias} onChange={(v) => setO('medias', v)} tip="Valor medio escrito sobre cada barra" />
           <InterruptorCinta simbolo="±" texto="Error" valor={o.errores} onChange={(v) => setO('errores', v)} deshabilitado={!o.medias} tip="Agrega el error junto al valor medio" />
           <InterruptorCinta icono="umbral" texto="Clases" valor={o.lineas} onChange={(v) => setO('lineas', v)} deshabilitado={sinOdc} tip="Líneas de ODc, 2 × ODc y 4 × ODc con el nombre de cada clase" />
+        </Grupo>
+        <BotonOpciones activo={mas} onClick={() => setMas(!mas)} tip="Blancos, orden, color, rotación, umbrales e imagen" />
+      </Cinta>
+      <Cajon titulo="Más opciones" abierto={mas} onClose={() => setMas(false)}>
+        <div className="cajon-grupos">
+        <Grupo titulo="Ajustes">
+          <InterruptorCinta icono="matraz" texto="Blancos" valor={verBlancos} onChange={(v) => setO('blancos', v)} tip="Mostrar también los blancos (medio sin inocular)" />
+          <CampoCinta etiqueta="Orden"><Select value={o.orden} onChange={(v) => setO('orden', v)} opciones={[['lista', 'Como en la lista'], ['asc', 'OD creciente'], ['desc', 'OD decreciente']]} /></CampoCinta>
+          <CampoCinta etiqueta="Color"><Select value={o.color} onChange={(v) => setO('color', v)} opciones={[['clase', 'Según la clase'], ['uno', 'Un solo color']]} /></CampoCinta>
+          <CampoCinta etiqueta="Rotación (°)"><Num value={o.rotar} min={0} max={90} ancho={56} onChange={(v) => setO('rotar', v === '' ? 0 : v)} /></CampoCinta>
           <InterruptorCinta simbolo="0,3" texto="Umbrales" valor={o.valoresClase} onChange={(v) => setO('valoresClase', v)} deshabilitado={sinOdc || !o.lineas} tip="Escribe el valor numérico bajo el nombre de cada clase" />
           <InterruptorCinta simbolo="%" texto={ERROR_REL[tipoRel(o.error)].etq} valor={!!o.cv} onChange={(v) => setO('cv', v)} tip={`Fila debajo de los nombres con el error de las barras en % de la media:\nDE → DE % (desviación estándar relativa, CV) · SEM → EE % (error estándar relativo) · IC 95 % → IC %.\nCon DE, en naranja si supera el ${cvLim} % (límite de CV de «Revisión»).`} />
         </Grupo>
         <GrupoImagen onGuardar={() => setExp(true)} onEstilo={() => setDlg(true)} onRango={() => setRng(true)} />
-      </Cinta>
+        </div>
+      </Cajon>
       <Cajon titulo="Muestras que se dibujan" abierto={cajon} onClose={() => setCajon(false)}>
         <div className="fila" style={{ marginBottom: 8 }}>
           <button className="chico" onClick={() => setO('muestrasFuera', [])}>Todas</button>
@@ -348,6 +364,8 @@ export function TablaAvanzada({ id, titulo, columnas, filas, onVista, tips }) {
   const [abierto, setAbierto] = useState(null)
   const [sort, setSort] = useState(null)
   const arrastre = useRef(null)
+  // cada columna numérica muestra siempre la misma cantidad de decimales
+  const cifras = useMemo(() => Object.fromEntries(columnas.map((c) => [c, Math.max(0, ...filas.map((f) => (typeof f[c] === 'number' ? (String(f[c]).split('.')[1] || '').length : 0)))])), [columnas, filas])
   useEffect(() => { setOrden((o) => (columnas.every((c) => o.includes(c)) && o.length === columnas.length ? o : columnas)) }, [columnas.join('|')])
 
   const esNum = useMemo(() => Object.fromEntries(columnas.map((c) => [c, filas.some((f) => typeof f[c] === 'number')])), [columnas, filas])
@@ -410,7 +428,7 @@ export function TablaAvanzada({ id, titulo, columnas, filas, onVista, tips }) {
             </tr>
           </thead>
           <tbody>
-            {vista.map((f, i) => <tr key={i}>{orden.map((c) => { const t = tips ? tips(f, c) : null; return <td key={c} data-tip={t || undefined} className={[typeof f[c] === 'number' ? 'num' : '', t ? 'con-calculo' : ''].join(' ').trim() || undefined}>{f[c]}</td> })}</tr>)}
+            {vista.map((f, i) => <tr key={i}>{orden.map((c) => { const t = tips ? tips(f, c) : null; return <td key={c} data-tip={t || undefined} className={[typeof f[c] === 'number' ? 'num' : '', t ? 'con-calculo' : ''].join(' ').trim() || undefined}>{typeof f[c] === 'number' ? f[c].toFixed(cifras[c] || 0).replace('.', ',') : f[c]}</td> })}</tr>)}
             {!vista.length && <tr><td colSpan={orden.length} className="ayuda">Ninguna fila cumple los filtros.</td></tr>}
           </tbody>
         </table>
@@ -478,8 +496,8 @@ export function DatosTab({ s }) {
     if (c === 'Aceptadas') return `Réplicas aceptadas\n${f.Aceptadas} de ${f.Pocillos} pocillos entran en los cálculos\nExcluidas: ${f.Excluidas} (a mano o por valor atípico)`
     return null
   }
-  const tipsPocillos = (f, c) => (c === 'OD_corregida' || c === 'OD_leida' ? `Pocillo ${f.Pocillo}\nOD corregida = OD leída − blanco\n= ${f.OD_leida} − ${fmt(resta, 4)} = ${f.OD_corregida}`
-    : c === 'Estado' || c === 'Motivo' || c === 'Sospechoso' ? `Pocillo ${f.Pocillo} (${f.Muestra} R${f.Replica})\n${corr ? `OD corregida = ${f.OD_corregida} (leída ${f.OD_leida})` : `OD = ${f.OD}`}\nEstado: ${f.Estado}${f.Sospechoso === 'Sí' ? ' · sospechoso (valor atípico)' : ''}\n${f.Motivo || 'Sin observaciones'}` : null)
+  const tipsPocillos = (f, c) => (c === 'OD_corregida' || c === 'OD_leida' ? `Pocillo ${f.Pocillo}\nOD corregida = OD leída − blanco\n= ${coma(f.OD_leida)} − ${fmt(resta, 4)} = ${coma(f.OD_corregida)}`
+    : c === 'Estado' || c === 'Motivo' || c === 'Sospechoso' ? `Pocillo ${f.Pocillo} (${f.Muestra} R${f.Replica})\n${corr ? `OD corregida = ${coma(f.OD_corregida)} (leída ${coma(f.OD_leida)})` : `OD = ${coma(f.OD)}`}\nEstado: ${f.Estado}${f.Sospechoso === 'Sí' ? ' · sospechoso (valor atípico)' : ''}\n${f.Motivo || 'Sin observaciones'}` : null)
   const cm = Object.keys(muestras[0] || {}).filter((k) => !k.startsWith('_'))
   const cp = Object.keys(pocillos[0] || {})
   return (
@@ -552,8 +570,8 @@ function MetodoDetalle({ d, odc, restar }) {
       <div className="tabla-scroll chica"><table className="tabla"><thead><tr><th>n (réplicas)</th>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <th key={n}>{n}</th>)}</tr></thead>
         <tbody>
           <tr><td>g.l. = n − 1</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{n - 1}</td>)}</tr>
-          <tr><td><b>t(0,975; n − 1)</b></td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{t95(n).toFixed(3)}</td>)}</tr>
-          <tr><td>IC 95 % en múltiplos de SEM</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{t95(n).toFixed(2)} × SEM</td>)}</tr>
+          <tr><td><b>t(0,975; n − 1)</b></td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{coma(t95(n).toFixed(3))}</td>)}</tr>
+          <tr><td>IC 95 % en múltiplos de SEM</td>{[2, 3, 4, 5, 6, 8, 11, 21, 31].map((n) => <td key={n}>{coma(t95(n).toFixed(2))} × SEM</td>)}</tr>
         </tbody></table></div>
       <p className="ayuda">Ejemplo: con 3 réplicas, IC 95 % = 4,303 × SEM = 4,303 × s / √3 ≈ 2,484 × s. Con 30 réplicas el factor baja a 2,045 × SEM.</p>
 
@@ -568,7 +586,7 @@ function MetodoDetalle({ d, odc, restar }) {
       </ul>
       <p>Se toma el mayor de los dos Q (el extremo más aislado) y se compara con el valor crítico <code>Q crít (n, confianza)</code> de la tabla. Si <code>Q &gt; Q crít</code>, ese valor se declara atípico. Es una prueba bilateral que supone distribución normal; con pocas réplicas tiene poca potencia.</p>
       <div className="tabla-scroll chica"><table className="tabla"><thead><tr><th>n</th>{Q_TABLA.n.map((n) => <th key={n}>{n}</th>)}</tr></thead>
-        <tbody>{['90', '95', '99'].map((c) => <tr key={c}><td><b>{c} %</b></td>{Q_TABLA[c].map((v, i) => <td key={i}>{v.toFixed(3)}</td>)}</tr>)}</tbody></table></div>
+        <tbody>{['90', '95', '99'].map((c) => <tr key={c}><td><b>{c} %</b></td>{Q_TABLA[c].map((v, i) => <td key={i}>{coma(v.toFixed(3))}</td>)}</tr>)}</tbody></table></div>
       <p className="ayuda">Valores críticos de Q (bilateral) según Rorabacher (1991).</p>
 
       <h3>5. Test de Grubbs</h3>
@@ -580,7 +598,7 @@ function MetodoDetalle({ d, odc, restar }) {
       </ul>
       <p>Con n = 3, G nunca puede superar <code>(n − 1)/√n = 1,155</code> y el crítico al 95 % es 1,153: el test casi nunca declara un atípico con 3 réplicas. Es más útil con 4 o más pocillos por muestra.</p>
       <div className="tabla-scroll chica"><table className="tabla"><thead><tr><th>n</th>{[3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map((n) => <th key={n}>{n}</th>)}</tr></thead>
-        <tbody>{['90', '95', '99'].map((c) => <tr key={c}><td><b>{c} %</b></td>{[3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map((n) => <td key={n}>{criticoGrubbs(n, c).toFixed(3)}</td>)}</tr>)}</tbody></table></div>
+        <tbody>{['90', '95', '99'].map((c) => <tr key={c}><td><b>{c} %</b></td>{[3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map((n) => <td key={n}>{coma(criticoGrubbs(n, c).toFixed(3))}</td>)}</tr>)}</tbody></table></div>
       <p className="ayuda">Valores críticos de G calculados con la fórmula de arriba (coinciden con las tablas publicadas de Grubbs, 1969).</p>
 
       <h3>6. Coeficiente de variación (%RSD)</h3>

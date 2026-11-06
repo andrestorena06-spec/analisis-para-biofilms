@@ -24,5 +24,5 @@ export function corregirAnalisis(a) {
 export const odLeida = (v, a) => (finito(v) ? v + (a?.odc?.resta || 0) : v)
 
 export const textoBlanco = (a) => (a?.blanco?.restado
-  ? `OD corregida = OD leída − ${a.blanco.valor.toFixed(4)} (media de ${a.blanco.n} ${a.blanco.n === 1 ? 'blanco aceptado' : 'blancos aceptados'})`
+  ? `OD corregida = OD leída − ${a.blanco.valor.toFixed(4).replace('.', ',')} (media de ${a.blanco.n} ${a.blanco.n === 1 ? 'blanco aceptado' : 'blancos aceptados'})`
   : '')

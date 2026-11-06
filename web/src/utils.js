@@ -68,9 +68,12 @@ export const t95 = (n) => tCuantil(0.975, n - 1)
 // semiancho del IC 95 % de una media: t(0,975; n − 1) × SEM. Con menos de 2 datos no hay intervalo.
 export const ic95 = (sem, n) => (n > 1 ? t95(n) * sem : null)
 
-export const FUENTE = "'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif"
+export const FUENTE = "'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif"
 
-export const fmt = (x, d = 3) => (Number.isFinite(x) ? x.toFixed(d) : 'NA')
+// números para mostrar: siempre con coma decimal (los datos y las exportaciones siguen siendo números)
+export const coma = (x) => String(x).replace('.', ',')
+export const dec = (x, d = 3) => coma(x.toFixed(d))
+export const fmt = (x, d = 3) => (Number.isFinite(x) ? dec(x, d) : 'NA')
 const SUB = '₀₁₂₃₄₅₆₇₈₉'
 export const sub = (n) => String(n).replace(/\d/g, (d) => SUB[Number(d)])
 
@@ -102,7 +105,7 @@ export function ticksBonitos(min, max, n = 6) {
 
 export const fmtTick = (v, paso) => {
   const dec = paso >= 1 ? 0 : Math.min(4, Math.max(0, Math.ceil(-Math.log10(paso))))
-  return v.toFixed(dec)
+  return coma(v.toFixed(dec))
 }
 
 let _ctx
@@ -233,8 +236,8 @@ export const ESCALAS = {
     eje: 'OD ÷ ODc', corto: 'OD ÷ ODc', f: (od, odc, resta = 0) => (Number.isFinite(od) && odc > 0 ? (od + (resta || 0)) / odc : NaN),
     umbrales: [[1, 'ODc', 1], [2, '2 × ODc', 2], [4, '4 × ODc', 4]], nota: '1 = ODc, 2 = 2 × ODc, 4 = 4 × ODc',
     cuenta: (od, odc, resta = 0) => (resta
-      ? `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr('OD corregida + blanco', 'ODc'), fr(`${od.toFixed(4)} + ${resta.toFixed(4)}`, odc.toFixed(4)), ((od + resta) / odc).toFixed(3))}`
-      : `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr(od.toFixed(4), odc.toFixed(4)), (od / odc).toFixed(3))}`),
+      ? `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr('OD corregida + blanco', 'ODc'), fr(`${fmt(od, 4)} + ${fmt(resta, 4)}`, fmt(odc, 4)), fmt((od + resta) / odc))}`
+      : `${tit('Escala OD ÷ ODc')}\n${ec('OD ÷ ODc', fr(fmt(od, 4), fmt(odc, 4)), fmt(od / odc))}`),
   },
 }
 // la escala que se puede usar con ese ODc (sin ODc, OD)

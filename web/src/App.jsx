@@ -18,7 +18,7 @@ import { GloboInfo } from './components/tip.jsx'
 import { CintaCtx } from './components/cinta.jsx'
 import { Icono, LogoPlaca } from './components/iconos.jsx'
 import { MenuContextual, useMenuContextual } from './components/ui.jsx'
-import { descargarBlob } from './utils.js'
+import { descargarBlob, fmt } from './utils.js'
 import { corregirAnalisis } from './correccion.js'
 
 const CLAVE_TEMA = 'biofilm-v3-tema'
@@ -245,7 +245,7 @@ export default function App() {
     const p = [`${vis.length} ${vis.length === 1 ? 'placa' : 'placas'}`, `${cepas.size} ${cepas.size === 1 ? 'muestra analizada' : 'muestras analizadas'}`]
     const medios = [...new Set(vis.map((x) => x.medio).filter(Boolean))]
     if (medios.length) p.push(medios.join(' y '))
-    if (analisis && Number.isFinite(analisis.odc?.odc)) p.push(`ODc de ${activa.nombre} = ${analisis.odc.odc.toFixed(3)}`)
+    if (analisis && Number.isFinite(analisis.odc?.odc)) p.push(`ODc de ${activa.nombre} = ${fmt(analisis.odc.odc)}`)
     p.push(MODO === 'web' ? 'cálculos en este equipo' : 'motor R')
     p.push(archivo ? `archivo: ${archivo.nombre}${archivo.viejo ? ' (versión anterior)' : ''}` : 'sin archivo guardado')
     p.push('copia automática en «Recientes»')

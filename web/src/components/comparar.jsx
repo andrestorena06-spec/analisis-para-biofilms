@@ -3,7 +3,7 @@ import { CompararChart } from './compararchart.jsx'
 import { Nota } from './tip.jsx'
 import { ExportDialog } from './exportar.jsx'
 import { Check, EstiloDialog, MenuContextual, Num, RangoDialog, Select, Vacio, tamDe, useMenuContextual } from './ui.jsx'
-import { BotonCinta, Cajon, CampoCinta, Cinta, Grupo, InterruptorCinta, OpcionesCinta } from './cinta.jsx'
+import { BotonCinta, BotonOpciones, Cajon, CampoCinta, Cinta, Grupo, InterruptorCinta, OpcionesCinta } from './cinta.jsx'
 import { armarComparacion } from '../comparacion.js'
 import { ERROR_REL, tipoRel } from './charts.jsx'
 import { BotonBlanco } from './blanco.jsx'
@@ -50,7 +50,7 @@ export function CompararTab({ s, grupoVista }) {
   const medios1 = modo === 'medio' && porPlacaG ? [...new Set(grupos.flatMap((g) => g.barras.filter((b) => b.nPlacas < 2).map((b) => b.medio)))] : []
   const unaPlaca = modo === 'todas' && porPlacaG && placasSel.length < 2
   const nCols = grupos.reduce((a, g) => a + g.barras.length, 0)
-  const grafico = (ref, tam, ctx) => <CompararChart ref={ref} grupos={grupos} leyenda={leyenda} o={el} est={s.estilos.comparar} eje={eje} onContext={ctx} tam={tam} nota={nota}
+  const grafico = (ref, tam, ctx) => <CompararChart ref={ref} grupos={grupos} leyenda={modo === 'todas' && !el.puntos ? [] : leyenda} o={el} est={s.estilos.comparar} eje={eje} onContext={ctx} tam={tam} nota={nota}
     clases={rel && o.lineas !== false} escala={escala} unidad={rel ? ESCALAS[escala].corto : D.corregida ? 'OD corregida' : 'OD'} cvLim={cvLim} />
 
   const cambiarCelda = (id, m, v) => { const k = clave(id, m); const sin = (o.ocultos || []).filter((x) => x !== k); setO('ocultos', v ? sin : [...sin, k]) }
@@ -70,12 +70,6 @@ export function CompararTab({ s, grupoVista }) {
     <div>
       <Cinta>
         {grupoVista}
-        <Grupo titulo="Agrupar">
-          <OpcionesCinta valor={D.porSero ? 'serotipo' : 'cepa'} onChange={(v) => { if (v === 'serotipo' && !D.serotipos.length) { s.avisar('Todavía ninguna cepa tiene serotipo: cargalo en «Datos del experimento».', 'error'); s.abrirEditar(); return } setO('agrupar', v) }} opciones={[
-            ['cepa', 'Por cepa', null, 'puntos', 'Cada grupo del eje X es una cepa'],
-            ['serotipo', 'Por serotipo', null, 'etiqueta', 'Cada grupo del eje X es un serotipo: sus cepas juntas\nEl serotipo de cada cepa se carga en «Datos del experimento»' + (D.serotipos.length ? '' : '\nTodavía ninguna cepa tiene serotipo')],
-          ]} />
-        </Grupo>
         <Grupo titulo="Columnas">
           <OpcionesCinta valor={modo} onChange={(v) => setO('modo', v)} opciones={[
             ['placas', 'Por placa', null, 'placas', D.porSero ? 'Una columna por placa: cada punto es una cepa del serotipo en esa placa' : 'Una columna por placa (la altura es la OD media de sus réplicas)'],
@@ -83,28 +77,21 @@ export function CompararTab({ s, grupoVista }) {
             ['todas', 'Todas', 'x̄', null, D.porSero ? 'Una columna por serotipo con todas las placas juntas, sin separar por medio' : 'Una columna por cepa con todas las placas juntas, sin separar por medio: el promedio de cada cepa en todo el experimento'],
             ...(D.porSero ? [] : [['pocillo', 'Por pocillo', null, 'puntos', 'Una columna por pocillo (sin error: un solo valor por columna)']]),
           ]} />
-          {D.porSero && (modo === 'medio' || modo === 'todas') && (
-            <CampoCinta etiqueta="Datos del serotipo" tip={'Define los puntos, la media, el error y la dispersión de cada serotipo.\nUn valor por cepa: la media de sus placas (la cepa es la réplica del serotipo).\nUn valor por placa: cada placa de cada cepa.\nPocillos: todos los pocillos de sus cepas.'}>
-              <Select value={D.datosSero} onChange={(v) => setO('puntosSero', v)} opciones={[['cepas', 'Un valor por cepa'], ['placas', 'Un valor por placa'], ['pocillos', 'Pocillos']]} />
-            </CampoCinta>
-          )}
-          {!D.porSero && (modo === 'medio' || modo === 'todas') && (
-            <CampoCinta etiqueta={modo === 'medio' ? 'Datos de cada medio' : 'Datos'} tip={`Define los puntos, la media, el error y la dispersión.\nPocillos: todos los pocillos ${modo === 'medio' ? 'del medio' : 'de todas las placas'}.\nUn valor por placa: cada placa es una réplica biológica (hacen falta 2 o más placas para el error).`}>
-              <Select value={o.puntosMedio || 'pocillos'} onChange={(v) => setO('puntosMedio', v)} opciones={[['pocillos', 'Pocillos'], ['placas', 'Un valor por placa']]} />
-            </CampoCinta>
-          )}
         </Grupo>
         <Grupo titulo="Datos">
           <BotonCinta icono="placas" texto={`Placas ${placasSel.length}/${conAnalisis.length}`} activo={cajon === 'placas'} onClick={() => setCajon(cajon === 'placas' ? null : 'placas')} tip="Elegir qué placas entran en el gráfico" />
           <BotonCinta icono="filtro" texto={nOcultas ? `Muestras (${nOcultas} ocultas)` : 'Muestras'} activo={cajon === 'muestras'} onClick={() => setCajon(cajon === 'muestras' ? null : 'muestras')} tip="Qué muestra se ve en cada placa" />
-          <InterruptorCinta icono="matraz" texto="Blancos" valor={D.verBlancos} onChange={(v) => setO('blancos', v)} tip="Incluir los blancos (medio sin inocular)" />
-          <CampoCinta etiqueta="Orden" tip="Orden de las cepas (o serotipos) en el eje X: el de la lista de muestras, o por la media de todas sus columnas"><Select value={o.ordenGrupos || 'lista'} onChange={(v) => setO('ordenGrupos', v)} opciones={[['lista', 'Como en la lista'], ['asc', 'OD creciente'], ['desc', 'OD decreciente']]} /></CampoCinta>
         </Grupo>
         <Grupo titulo="Ajustes">
           <BotonBlanco s={s} />
           {modo !== 'pocillo' && <CampoCinta etiqueta="Error"><Select value={o.error} onChange={(v) => setO('error', v)} opciones={[['sd', 'DE'], ['sem', 'SEM'], ['ic95', 'IC 95 %'], ['ninguno', 'Ninguno']]} /></CampoCinta>}
-          <CampoCinta etiqueta="Rotación (°)"><Num value={o.rotar} min={0} max={90} ancho={56} onChange={(v) => setO('rotar', v === '' ? 0 : v)} /></CampoCinta>
         </Grupo>
+        <BotonOpciones activo={cajon === 'mas'} onClick={() => setCajon(cajon === 'mas' ? null : 'mas')} tip="Agrupar, blancos, orden, rotación e imagen">
+          <BotonCinta simbolo="▮" texto="Elementos" activo={cajon === 'elementos'} onClick={() => setCajon(cajon === 'elementos' ? null : 'elementos')} tip="Barras, error, caja, mediana, puntos y valores que se dibujan" />
+        </BotonOpciones>
+      </Cinta>
+      <Cajon titulo="Elementos del gráfico" abierto={cajon === 'elementos'} onClose={() => setCajon(null)}>
+        <div className="cajon-grupos">
         <Grupo titulo="Elementos">
           <InterruptorCinta simbolo="▮" texto="Barras" valor={el.barras} onChange={(v) => poner({ barras: v })} tip="Media de las réplicas aceptadas" />
           <InterruptorCinta simbolo="⊥" texto="Error" valor={el.barrasError} onChange={(v) => poner({ barrasError: v })} deshabilitado={modo === 'pocillo'} tip="Barra de error del tipo elegido" />
@@ -119,12 +106,42 @@ export function CompararTab({ s, grupoVista }) {
           {rel && <InterruptorCinta icono="umbral" texto="Clases" valor={o.lineas !== false} onChange={(v) => setO('lineas', v)} tip={`Líneas en ${umbTxt} (ODc, 2 × ODc y 4 × ODc de cada placa) con el nombre de cada clase.\nEn esta escala los umbrales son los mismos para todas las placas.`} />}
           {rel && <InterruptorCinta simbolo="0,3" texto="Umbrales" valor={!!o.valoresClase} onChange={(v) => setO('valoresClase', v)} deshabilitado={o.lineas === false} tip="Escribe el rango de cada clase bajo su nombre" />}
         </Grupo>
+        </div>
+      </Cajon>
+      <Cajon titulo="Más opciones" abierto={cajon === 'mas'} onClose={() => setCajon(null)}>
+        <div className="cajon-grupos">
+        <Grupo titulo="Agrupar">
+          <OpcionesCinta valor={D.porSero ? 'serotipo' : 'cepa'} onChange={(v) => { if (v === 'serotipo' && !D.serotipos.length) { s.avisar('Todavía ninguna cepa tiene serotipo: cargalo en «Datos del experimento».', 'error'); s.abrirEditar(); return } setO('agrupar', v) }} opciones={[
+            ['cepa', 'Por cepa', null, 'puntos', 'Cada grupo del eje X es una cepa'],
+            ['serotipo', 'Por serotipo', null, 'etiqueta', 'Cada grupo del eje X es un serotipo: sus cepas juntas\nEl serotipo de cada cepa se carga en «Datos del experimento»' + (D.serotipos.length ? '' : '\nTodavía ninguna cepa tiene serotipo')],
+          ]} />
+        </Grupo>
+        <Grupo titulo="Columnas">
+          {D.porSero && (modo === 'medio' || modo === 'todas') && (
+            <CampoCinta etiqueta="Datos del serotipo" tip={'Define los puntos, la media, el error y la dispersión de cada serotipo.\nUn valor por cepa: la media de sus placas (la cepa es la réplica del serotipo).\nUn valor por placa: cada placa de cada cepa.\nPocillos: todos los pocillos de sus cepas.'}>
+              <Select value={D.datosSero} onChange={(v) => setO('puntosSero', v)} opciones={[['cepas', 'Un valor por cepa'], ['placas', 'Un valor por placa'], ['pocillos', 'Pocillos']]} />
+            </CampoCinta>
+          )}
+          {!D.porSero && (modo === 'medio' || modo === 'todas') && (
+            <CampoCinta etiqueta={modo === 'medio' ? 'Datos de cada medio' : 'Datos'} tip={`Define los puntos, la media, el error y la dispersión.\nPocillos: todos los pocillos ${modo === 'medio' ? 'del medio' : 'de todas las placas'}.\nUn valor por placa: cada placa es una réplica biológica (hacen falta 2 o más placas para el error).`}>
+              <Select value={o.puntosMedio || 'pocillos'} onChange={(v) => setO('puntosMedio', v)} opciones={[['pocillos', 'Pocillos'], ['placas', 'Un valor por placa']]} />
+            </CampoCinta>
+          )}
+        </Grupo>
+        <Grupo titulo="Datos">
+          <InterruptorCinta icono="matraz" texto="Blancos" valor={D.verBlancos} onChange={(v) => setO('blancos', v)} tip="Incluir los blancos (medio sin inocular)" />
+          <CampoCinta etiqueta="Orden" tip="Orden de las cepas (o serotipos) en el eje X: el de la lista de muestras, o por la media de todas sus columnas"><Select value={o.ordenGrupos || 'lista'} onChange={(v) => setO('ordenGrupos', v)} opciones={[['lista', 'Como en la lista'], ['asc', 'OD creciente'], ['desc', 'OD decreciente']]} /></CampoCinta>
+        </Grupo>
+        <Grupo titulo="Ajustes">
+          <CampoCinta etiqueta="Rotación (°)"><Num value={o.rotar} min={0} max={90} ancho={56} onChange={(v) => setO('rotar', v === '' ? 0 : v)} /></CampoCinta>
+        </Grupo>
         <Grupo titulo="Imagen">
           <BotonCinta icono="imagen" texto="Guardar imagen" onClick={() => setExp(true)} deshabilitado={!grupos.length || sinElementos} tip="PNG o SVG con el tamaño y la resolución que elijas" />
           <BotonCinta simbolo="Aa" texto="Textos" onClick={() => setDlg(true)} tip="Título, leyendas, etiquetas y números (también con clic derecho)" />
           <BotonCinta icono="ordenar" texto="Eje Y" onClick={() => setRng(true)} tip="Mínimo y máximo del eje Y" />
         </Grupo>
-      </Cinta>
+        </div>
+      </Cajon>
 
       <Cajon titulo="Placas que entran en el gráfico" abierto={cajon === 'placas'} onClose={() => setCajon(null)}>
         <div className="fila" style={{ marginBottom: 8 }}>

@@ -188,7 +188,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
               return {
                 x: x0 + k * sw + sw / 2, v: r.v, corto: sw < 34,
                 tip: Number.isFinite(r.v)
-                  ? `${cab}\n${R.nombre} = 100 × ${R.sigla} ÷ media = 100 × ${fmt(r.err, 4)} ÷ ${fmt(r.m, 4)} = ${r.v.toFixed(1)} % (n = ${d.length})${tr === 'sd' && r.v > cvLim ? `\nSupera el límite de ${cvLim} %` : ''}${tr !== 'sd' ? `\nCV (DE %) = ${r.cv.toFixed(1)} %` : ''}`
+                  ? `${cab}\n${R.nombre} = 100 × ${R.sigla} ÷ media = 100 × ${fmt(r.err, 4)} ÷ ${fmt(r.m, 4)} = ${fmt(r.v, 1)} % (n = ${d.length})${tr === 'sd' && r.v > cvLim ? `\nSupera el límite de ${cvLim} %` : ''}${tr !== 'sd' ? `\nCV (DE %) = ${r.cv.toFixed(1)} %` : ''}`
                   : `${cab}\nhacen falta 2 o más datos`,
               }
             })

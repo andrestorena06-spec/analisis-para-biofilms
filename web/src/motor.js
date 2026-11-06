@@ -6,7 +6,7 @@
 // ============================================================
 import { Q_TABLA } from './criticos.js'
 import { leerHojasLibro } from './libro.js'
-import { ic95, tCuantil } from './utils.js'
+import { dec, ic95, tCuantil } from './utils.js'
 
 const LETRAS = 'ABCDEFGH'.split('')
 export const pocillos96 = () => LETRAS.flatMap((f) => Array.from({ length: 12 }, (_, i) => f + (i + 1)))
@@ -235,10 +235,10 @@ export function estadoPocillos(datos, cfg, exclManual, exclForzado, det) {
       const i = idx[d.idx]
       e[i].Sospechoso = true
       detalle[i] = metodo === 'grubbs'
-        ? `Test de Grubbs (extremo ${d.lado}): G = ${d.stat.toFixed(3)} > crítico ${d.crit.toFixed(3)} (n = ${d.n}, confianza ${conf} %)`
+        ? `Test de Grubbs (extremo ${d.lado}): G = ${dec(d.stat, 3)} > crítico ${dec(d.crit, 3)} (n = ${d.n}, confianza ${conf} %)`
         : metodo === 'cv'
-          ? `CV de la muestra = ${d.stat.toFixed(1)} % > límite ${cvMax} % (pocillo más alejado de la media; sin él, CV = ${d.cvSin.toFixed(1)} %)`
-          : `Test Q de Dixon (extremo ${d.lado}): Q = ${d.stat.toFixed(3)} > crítico ${d.crit.toFixed(3)} (n = ${d.n}, confianza ${conf} %)`
+          ? `CV de la muestra = ${dec(d.stat, 1)} % > límite ${cvMax} % (pocillo más alejado de la media; sin él, CV = ${dec(d.cvSin, 1)} %)`
+          : `Test Q de Dixon (extremo ${d.lado}): Q = ${dec(d.stat, 3)} > crítico ${dec(d.crit, 3)} (n = ${d.n}, confianza ${conf} %)`
     }
   }
   e.forEach((r, i) => {

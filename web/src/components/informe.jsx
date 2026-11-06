@@ -14,9 +14,9 @@ const METODOS = { q: 'Test Q de Dixon', grubbs: 'Test de Grubbs', cv: 'Coeficien
 
 // ---- resúmenes de las pruebas (entre placas, entre medios y entre variantes de cada cepa) ----
 const NOMBRE_TEST = { anova: 'ANOVA', welch: 'ANOVA de Welch', kw: 'Kruskal-Wallis' }
-const pT = (p) => (!Number.isFinite(p) ? '–' : p < 0.0001 ? '&lt; 0.0001' : p.toFixed(4))
-const n3 = (x) => (Number.isFinite(x) ? x.toFixed(3) : '–')
-const glTxt = (g) => (g.df2 === null || g.df2 === undefined ? `${g.df1}` : `${g.df1}; ${Number.isInteger(g.df2) ? g.df2 : g.df2.toFixed(1)}`)
+const pT = (p) => (!Number.isFinite(p) ? '–' : p < 0.0001 ? '&lt; 0,0001' : fmt(p, 4))
+const n3 = (x) => (Number.isFinite(x) ? fmt(x) : '–')
+const glTxt = (g) => (g.df2 === null || g.df2 === undefined ? `${g.df1}` : `${g.df1}; ${Number.isInteger(g.df2) ? g.df2 : fmt(g.df2, 1)}`)
 // celdas de una fila de resultados: prueba, p y conclusión (o el motivo por el que no se pudo hacer)
 function celdasPrueba(r, extra) {
   if (!r) return `<td colspan="${extra ? 4 : 3}" class="tenue">menos de dos grupos con datos</td>`
@@ -25,7 +25,7 @@ function celdasPrueba(r, extra) {
   const orden = [...r.grupos].sort((a, z) => media(z.v) - media(a.v))
   const concl = !sig ? 'sin diferencias' : orden.length === 2 ? `${esc(orden[0].nombre)} &gt; ${esc(orden[1].nombre)}` : 'difieren'
   const pares = extra ? r.pares.filter((x) => Number.isFinite(x.pa) && x.pa < 0.05) : []
-  return `<td>${NOMBRE_TEST[r.tipo]}<br><small>${r.global.est}(${glTxt(r.global)}) = ${r.global.valor.toFixed(2)}</small></td>
+  return `<td>${NOMBRE_TEST[r.tipo]}<br><small>${r.global.est}(${glTxt(r.global)}) = ${fmt(r.global.valor, 2)}</small></td>
     <td class="num">${pT(p)} ${sig ? marcaSig(p) : ''}</td><td class="${sig ? 'sig' : ''}">${concl}</td>${extra ? `<td>${pares.length ? pares.map((x) => `${esc(x.a)} vs ${esc(x.b)} <small>(p ${pT(x.pa)})</small>`).join('<br>') : r.grupos.length > 2 ? 'ninguno' : '–'}</td>` : ''}`
 }
 // celda de un grupo: media ± DE (n) y la letra de la comparación
@@ -87,7 +87,7 @@ function estadisticaHTML(R) {
 }
 
 const tabla = (cols, filas) => `<table><thead><tr>${cols.map((c) => `<th>${esc(c.replace(/_/g, ' '))}</th>`).join('')}</tr></thead><tbody>${
-  filas.map((f) => `<tr>${cols.map((c) => `<td>${esc(f[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+  filas.map((f) => `<tr>${cols.map((c) => `<td>${esc(typeof f[c] === 'number' ? String(f[c]).replace('.', ',') : f[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`
 
 // Informe en PDF de todo lo procesado: se arma una página con gráficos y tablas y se abre el cuadro de impresión
 // (en Chrome: Destino › «Guardar como PDF»).

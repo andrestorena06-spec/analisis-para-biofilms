@@ -1,15 +1,17 @@
 // Barra de placas: elegir la placa activa, ordenarlas arrastrando y agregar más
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icono } from './iconos.jsx'
-import { paletaMuestras } from '../utils.js'
+import { fmt, paletaMuestras } from '../utils.js'
 
 export function BarraPlacas({ exp, placas, activa, analisisMap, setActivaId, setOpts, reordenarPlacas, setRenombrar, setMenuPlaca, abrirMenu, inputPlacas }) {
   const arrastrada = useRef(null)
   const [arrastrandoSobre, setArrastrandoSobre] = useState(null)
   const colores = paletaMuestras(placas.map((p) => p.id))
+  // la barra es de una sola fila: la placa elegida siempre queda a la vista
+  useEffect(() => { document.querySelector('.chip-placa.activa')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }, [activa?.id])
   return (
     <div className="barra-placas" role="tablist" aria-label="Placas">
-      {placas.filter((p) => !p.oculta || exp.opts.archivo.verOcultas).map((p) => {
+      {[...placas.filter((p) => !p.oculta), ...(exp.opts.archivo.verOcultas ? placas.filter((p) => p.oculta) : [])].map((p) => {
         const an = analisisMap[p.id]
         return (
           <div key={p.id} role="tab" tabIndex={0} aria-selected={p.id === activa?.id}
@@ -23,7 +25,7 @@ export function BarraPlacas({ exp, placas, activa, analisisMap, setActivaId, set
             onDragEnd={() => { arrastrada.current = null; setArrastrandoSobre(null) }}
             onClick={() => setActivaId(p.id)} onKeyDown={(e) => e.key === 'Enter' && setActivaId(p.id)}
             onDoubleClick={() => setRenombrar({ id: p.id, nombre: p.nombre })}
-            data-tip={`${p.nombre}${p.medio ? ` · ${p.medio}` : ''}\n${p.placa ? `${p.placa.datos.length} pocillos con datos · ${p.config.length} configurados` : 'Sin datos todavía'}${an && Number.isFinite(an.odc?.odc) ? `\nODc = ${an.odc.odc.toFixed(4)}` : ''}\nClic: ver esta placa · arrastrar: cambiar el orden · doble clic: renombrar · clic derecho: más opciones`}>
+            data-tip={`${p.nombre}${p.medio ? ` · ${p.medio}` : ''}\n${p.placa ? `${p.placa.datos.length} pocillos con datos · ${p.config.length} configurados` : 'Sin datos todavía'}${an && Number.isFinite(an.odc?.odc) ? `\nODc = ${fmt(an.odc.odc, 4)}` : ''}\nClic: ver esta placa · arrastrar: cambiar el orden · doble clic: renombrar · clic derecho: más opciones`}>
             <i className="punto-placa" style={{ background: colores[p.id] }} />
             <span className="nombre-placa">{p.nombre}</span>
             {p.medio && <small className="medio-placa">{p.medio}</small>}

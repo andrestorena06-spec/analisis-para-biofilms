@@ -6,6 +6,7 @@
 // ============================================================
 import { holm, media, varianza } from './estadistica.js'
 import { chi2Sup, fCdf, pnorm, rangos, shapiro, tSup2 } from './reproducibilidad.js'
+import { dec } from './utils.js'
 import { dunnettP, letras, levene, razonSD } from './decision.js'
 import { pTukey } from './tukey.js'
 
@@ -78,8 +79,8 @@ export function analizarBloques(grupos0, forzado = 'auto', ctrl = null, ajuste =
   const intro = `La placa se usa como bloque: ${T.bloques.length} placas con todos los grupos${T.sueltas.length ? ` (${T.sueltas.length} sin todos los grupos quedan afuera: ${T.sueltas.map(nombreBloque).join(', ')})` : ''}. La variación entre placas (${A.pctBloque.toFixed(0)} % del total) se saca del error.`
   if (forzado === 'kw') { tipo = 'friedman'; razon = `${intro} Elegida por vos: Friedman, la versión por rangos.` }
   else if (forzado === 'anova' || forzado === 'welch') { tipo = 'bloques'; razon = `${intro} Elegida por vos: ANOVA en bloques.${forzado === 'welch' ? ' (No hay versión de Welch con bloques: se usó el ANOVA en bloques.)' : ''}` }
-  else if (swUtil && sw.p < 0.05) { tipo = 'friedman'; razon = `${intro} Los residuos del modelo no son normales (Shapiro-Wilk p = ${sw.p.toFixed(3)}): Friedman, que compara rangos dentro de cada placa.` }
-  else { tipo = 'bloques'; razon = `${intro} Residuos sin evidencia de no normalidad${sw ? ` (Shapiro-Wilk p = ${sw.p.toFixed(3)})` : ''}: ANOVA en bloques.` }
+  else if (swUtil && sw.p < 0.05) { tipo = 'friedman'; razon = `${intro} Los residuos del modelo no son normales (Shapiro-Wilk p = ${dec(sw.p, 3)}): Friedman, que compara rangos dentro de cada placa.` }
+  else { tipo = 'bloques'; razon = `${intro} Residuos sin evidencia de no normalidad${sw ? ` (Shapiro-Wilk p = ${dec(sw.p, 3)})` : ''}: ANOVA en bloques.` }
 
   const k = g.length, b = T.bloques.length
   const lista = []
@@ -127,8 +128,8 @@ export function escalaSugerida(grupos) {
   return {
     pend, escala: ln ? 'ln' : 'od', conNeg,
     texto: ln
-      ? `La DE crece casi en proporción a la media (pendiente ${pend.toFixed(2)}): conviene ln(OD), que iguala las varianzas y acerca los residuos a la normal.`
-      : pend >= 0.6 && conNeg ? `La DE crece con la media (pendiente ${pend.toFixed(2)}), pero hay valores ≤ 0 (OD corregida) y el logaritmo no se puede usar: queda OD.`
-        : `La DE no crece mucho con la media (pendiente ${pend.toFixed(2)}): la OD tal cual está bien.`,
+      ? `La DE crece casi en proporción a la media (pendiente ${dec(pend, 2)}): conviene ln(OD), que iguala las varianzas y acerca los residuos a la normal.`
+      : pend >= 0.6 && conNeg ? `La DE crece con la media (pendiente ${dec(pend, 2)}), pero hay valores ≤ 0 (OD corregida) y el logaritmo no se puede usar: queda OD.`
+        : `La DE no crece mucho con la media (pendiente ${dec(pend, 2)}): la OD tal cual está bien.`,
   }
 }

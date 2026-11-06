@@ -5,8 +5,8 @@ import { shapiro, spearman } from '../reproducibilidad.js'
 import { desvio, marcaSig, media } from '../estadistica.js'
 
 const finito = Number.isFinite
-export const f = (x, d = 3) => (finito(x) ? x.toFixed(d) : x === Infinity ? '∞' : '–')
-export const pTxt = (p) => (!finito(p) ? '–' : p < 0.0001 ? '< 0.0001' : p.toFixed(4))
+export const f = (x, d = 3) => (finito(x) ? x.toFixed(d).replace('.', ',') : x === Infinity ? '∞' : '–')
+export const pTxt = (p) => (!finito(p) ? '–' : p < 0.0001 ? '< 0,0001' : p.toFixed(4).replace('.', ','))
 export const NOMBRE_TEST = { anova: 'ANOVA', welch: 'ANOVA de Welch', kw: 'Kruskal-Wallis', bloques: 'ANOVA en bloques', friedman: 'Friedman' }
 
 // ---------------------------------------------------------------

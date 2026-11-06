@@ -137,7 +137,7 @@ export function PlacasVista({ s }) {
           <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Placas del experimento ({s.placas.length})</span>
             <span className="ayuda">Clic en el nombre para renombrar · el orden se cambia arrastrando las placas en la barra de placas</span></div>
           <div className="tabla-scroll alta">
-            <table className="tabla">
+            <table className="tabla tabla-placas">
               <thead><tr><th>Placa</th><th>Medio</th><th>Datos</th><th className="num">Pocillos</th><th className="num">Onda</th><th>Lectura</th><th className="num">Configurados</th><th className="num">ODc</th><th /></tr></thead>
               <tbody>
                 {s.placas.map((x) => {
@@ -154,7 +154,7 @@ export function PlacasVista({ s }) {
                       ) : <span className="chip aviso">sin datos</span>}</td>
                       <td className="num">{x.placa ? x.placa.datos.length : '—'}</td>
                       <td className="num">{Number.isFinite(x.placa?.onda) ? `${x.placa.onda} nm` : '—'}</td>
-                      <td>{x.placa?.fecha || '—'}</td>
+                      <td data-tip={x.placa?.fecha || undefined}>{x.placa?.fecha ? x.placa.fecha.split(' ')[0] : '—'}</td>
                       <td className="num">{x.config.length}</td>
                       <td className="num">{an && Number.isFinite(an.odc?.odc) ? fmt(an.odc.odc, 4) : '—'}</td>
                       <td><div className="acciones-fila">

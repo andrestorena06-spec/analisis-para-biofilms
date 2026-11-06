@@ -1,10 +1,15 @@
 // Estadística: la cinta con los datos, la réplica, la prueba y el ajuste
+import { useState } from 'react'
 import { Select } from './ui.jsx'
-import { BotonCinta, CampoCinta, Cinta, Grupo, OpcionesCinta } from './cinta.jsx'
+import { BotonCinta, Cajon, CampoCinta, Cinta, Grupo, OpcionesCinta } from './cinta.jsx'
 import { GrupoBlanco } from './blanco.jsx'
 
+const NOM_PRUEBA = { auto: 'Automática', anova: 'ANOVA', welch: 'Welch', kw: 'Kruskal-Wallis' }
+
 export function CintaEstadistica({ s, o, setO, grupoModo, variable, modo, nivel, conBloque, usaPlacaLibre, comp, ajuste, irDesarrollo }) {
+  const [abierto, setAbierto] = useState(false)
   return (
+    <>
     <Cinta>
       {grupoModo}
       <Grupo titulo="Datos">
@@ -31,6 +36,12 @@ export function CintaEstadistica({ s, o, setO, grupoModo, variable, modo, nivel,
           ]} />
         </Grupo>
       )}
+      <Grupo titulo="Prueba"><BotonCinta simbolo="Σ" texto={NOM_PRUEBA[o.prueba || 'auto']} activo={abierto} onClick={() => setAbierto(!abierto)} tip="Prueba global, comparaciones y ajuste de los pares" /></Grupo>
+      <GrupoBlanco s={s} />
+      <Grupo titulo="Desarrollo"><BotonCinta icono="libro" texto="Cálculos" onClick={irDesarrollo} tip="La comparación de los paneles desarrollada paso a paso (pestaña «Métodos»)" /></Grupo>
+    </Cinta>
+    <Cajon titulo="Opciones de la prueba" abierto={abierto} onClose={() => setAbierto(false)}>
+      <div className="cajon-grupos">
       <Grupo titulo="Prueba">
         <CampoCinta etiqueta="Prueba global" tip={'Automática: Kruskal-Wallis si los residuos no son normales (con 8 o más datos), ANOVA de Welch si las varianzas son distintas (Levene) y, si no, ANOVA clásico'}>
           <Select value={o.prueba || 'auto'} onChange={(v) => setO('prueba', v)} opciones={[['auto', 'Automática'], ['anova', 'ANOVA clásico'], ['welch', 'ANOVA de Welch'], ['kw', 'Kruskal-Wallis']]} />
@@ -43,8 +54,8 @@ export function CintaEstadistica({ s, o, setO, grupoModo, variable, modo, nivel,
           <Select value={ajuste} onChange={(v) => setO('ajuste', v)} opciones={[['holm', 'Holm / Dunnett'], ['tukey', 'Tukey / Games-Howell'], ['lsd', 'LSD de Fisher']]} />
         </CampoCinta>
       </Grupo>
-      <GrupoBlanco s={s} />
-      <Grupo titulo="Desarrollo"><BotonCinta icono="libro" texto="Ver los cálculos" onClick={irDesarrollo} tip="La comparación de los paneles desarrollada paso a paso (pestaña «Métodos»)" /></Grupo>
-    </Cinta>
+      </div>
+    </Cajon>
+    </>
   )
 }

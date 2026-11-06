@@ -7,7 +7,7 @@ import { useMemo } from 'react'
 import { Nota } from './tip.jsx'
 import { Vacio } from './ui.jsx'
 import { Cinta } from './cinta.jsx'
-import { DiagnosticoGlobal, Tabla, diagnosticoGlobal, f, juntarDe, pTxt } from './pruebas.jsx'
+import { DiagnosticoGlobal, NOMBRE_TEST, Tabla, diagnosticoGlobal, f, juntarDe, pTxt } from './pruebas.jsx'
 import { ComparadorLibre, GrupoModo, modoBase } from './seleccion.jsx'
 import { ReproTab } from './repro.jsx'
 import { Fichas, PanelGrupos, PanelResultado } from './estpaneles.jsx'
@@ -121,6 +121,17 @@ export function EstadisticaTab({ s }) {
   // escala sugerida por los datos (cómo crece la DE con la media), siempre mirando la OD sin transformar
   const sugerida = foco && variable !== 'odc' ? escalaSugerida(gruposFoco(variable === 'od' ? X : prepararDatos(s, D, 'od'), nivelDatos)) : null
   const bloquePosible = conBloque && foco && puedeBloques(foco.grupos.filter((g) => g.v.length))
+
+  // lo que define el resultado, en una línea junto a él: qué placas entran y cómo se comparó
+  const contexto = foco?.r?.ok ? {
+    alerta: modo !== 'libre' && placasUsadas.length < placasAlc.length,
+    texto: [
+      modo !== 'libre' && `${placasUsadas.length} de ${placasAlc.length} placas`,
+      NOMBRE_TEST[foco.r.tipo],
+      foco.r.bloques ? 'placa como bloque' : nivel === 'bloque' ? 'sin bloque: hacen falta 3 placas con todos los grupos' : nivel === 'pocillo' ? 'pocillos como réplica' : nivel === 'cepa' ? 'cepa como réplica' : 'placa como réplica',
+      foco.r.pares[0]?.metodo && `pares con ${foco.r.pares[0].metodo}`,
+    ].filter(Boolean).join(' · '),
+  } : null
 
   // ---- sensibilidad: la misma comparación con todas las combinaciones razonables de escala, réplica, prueba y ajuste ----
   const sensibilidad = () => correrSensibilidad({ s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco })
@@ -238,11 +249,11 @@ export function EstadisticaTab({ s }) {
           {libres.length > 1 && <Fichas etiqueta="Ver" opciones={libres.map((c, i) => ({ id: i, texto: `ANOVA ${i + 1}` }))} activa={(id) => id === iLibre} onClick={(id) => setO('selLibre', id)} />}
         </>}
         {sugerida && sugerida.escala !== variable && (
-          <p className="aviso-sel">Escala sugerida por tus datos: <b>{sugerida.escala === 'ln' ? 'ln(OD)' : 'OD'}</b><Nota>{sugerida.texto + ' Se decide con los datos, no con el resultado de la prueba.'}</Nota>
+          <p className="aviso-sel sugerencia">Escala sugerida por tus datos: <b>{sugerida.escala === 'ln' ? 'ln(OD)' : 'OD'}</b><Nota>{sugerida.texto + ' Se decide con los datos, no con el resultado de la prueba.'}</Nota>
             <button className="chico" onClick={() => setO('variable', sugerida.escala)}>Usar {sugerida.escala === 'ln' ? 'ln(OD)' : 'OD'}</button></p>
         )}
         {nivel === 'placa' && bloquePosible && (
-          <p className="aviso-sel">Las placas miden todos los grupos: con la placa como bloque se saca la variación entre placas y la prueba gana potencia.
+          <p className="aviso-sel sugerencia">Las placas miden todos los grupos: con la placa como bloque se saca la variación entre placas y la prueba gana potencia.
             <button className="chico" onClick={() => setO(modo === 'serotipos' ? 'nivelSero' : 'nivel', 'bloque')}>Usar bloques</button></p>
         )}
         {(sinAnalisis.length > 0 || X.sinOdc.length > 0 || X.noPos > 0 || (modo !== 'libre' && sinMedio.length > 0 && modo === 'medios')) && (
@@ -257,8 +268,8 @@ export function EstadisticaTab({ s }) {
 
       {foco ? (
         <div className="est-paneles">
+          <PanelResultado foco={foco} alDesarrollo={irDesarrollo} extra={extraResultado} contexto={contexto} />
           <PanelGrupos foco={foco} unidad={unidad} nivelTxt={nivelTxt} colorDe={colorDe} fuera={fueraFoco} comp={comp} onCtrl={(v) => setO(ctrlKey, v)} umbrales={UMBRALES[variable]} />
-          <PanelResultado foco={foco} alDesarrollo={irDesarrollo} extra={extraResultado} />
         </div>
       ) : modo === 'serotipos' ? <Vacio titulo="Todavía no hay serotipos para comparar" texto="Cargá el serotipo de cada cepa en «Datos del experimento» y elegí al menos dos serotipos." accion={<button className="primario" onClick={s.abrirEditar}>Cargar serotipos</button>} />
         : <Vacio titulo="Todavía no hay comparaciones" texto="Agregá una con las plantillas de arriba («Cepa vs cepa», «Una cepa entre medios»…)." />}

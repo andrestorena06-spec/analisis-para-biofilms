@@ -134,7 +134,7 @@ export function ExportDialog({ render, size0, nombre, onClose }) {
               <span className="asa asa-se" onPointerDown={arrastrar('se')} title={r ? 'Escala manteniendo la proporción' : 'Ancho y alto'} />
             </div>
           </div>
-          <p className="ayuda">Proporción actual: <b>{(fig.w / fig.h).toFixed(2)} : 1</b> ({fig.w} × {fig.h} unidades)</p>
+          <p className="ayuda">Proporción actual: <b>{(fig.w / fig.h).toFixed(2).replace('.', ',')} : 1</b> ({fig.w} × {fig.h} unidades)</p>
         </div>
         <div className="export-ctrl">
           <Campo label="Proporción">

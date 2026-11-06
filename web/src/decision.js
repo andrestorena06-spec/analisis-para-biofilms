@@ -6,7 +6,7 @@
 // Comparaciones de a pares con corrección de Holm: t con varianza común (ANOVA), t de Welch (Welch) o Dunn (Kruskal-Wallis).
 // ============================================================
 import { anovaTabla, desvio, holm, media, varianza, welch } from './estadistica.js'
-import { tCuantil } from './utils.js'
+import { dec, tCuantil } from './utils.js'
 import { fCdf, kruskal, pnorm, rangos, rssRango, shapiro, tSup2 } from './reproducibilidad.js'
 import { pTukey } from './tukey.js'
 
@@ -149,9 +149,9 @@ export function analizar(grupos, forzado = 'auto', ctrl = null, ajuste = 'holm')
   let tipo = forzado, razon = 'Elegida por vos.'
   const puedeWelch = vs.every((v) => v.length >= 2) && vs.every((v) => varianza(v) > 0)
   if (forzado === 'auto') {
-    if (swUtil && sw.p < 0.05 && nMin >= 3) { tipo = 'kw'; razon = `Los residuos no son normales (Shapiro-Wilk p = ${sw.p.toFixed(3)}, con ${resid.length} datos): Kruskal-Wallis, que compara rangos y no asume normalidad.` }
-    else if (lev && lev.p < 0.05) { tipo = 'welch'; razon = `Varianzas distintas (Levene p = ${lev.p.toFixed(3)}): ANOVA de Welch, que no asume varianzas iguales.` }
-    else if (lev) { tipo = 'anova'; razon = `Varianzas parecidas (Levene p = ${lev.p.toFixed(3)}) y residuos sin evidencia de no normalidad: ANOVA clásico.` }
+    if (swUtil && sw.p < 0.05 && nMin >= 3) { tipo = 'kw'; razon = `Los residuos no son normales (Shapiro-Wilk p = ${dec(sw.p, 3)}, con ${resid.length} datos): Kruskal-Wallis, que compara rangos y no asume normalidad.` }
+    else if (lev && lev.p < 0.05) { tipo = 'welch'; razon = `Varianzas distintas (Levene p = ${dec(lev.p, 3)}): ANOVA de Welch, que no asume varianzas iguales.` }
+    else if (lev) { tipo = 'anova'; razon = `Varianzas parecidas (Levene p = ${dec(lev.p, 3)}) y residuos sin evidencia de no normalidad: ANOVA clásico.` }
     else { tipo = 'welch'; razon = 'Con tan pocas réplicas (menos de 3 por grupo) no se pueden comparar las varianzas con Levene: se usa el ANOVA de Welch, que no asume varianzas iguales. Tomalo con cautela.' }
   }
   if (tipo === 'welch' && !puedeWelch) { tipo = 'anova'; razon += ' (Welch necesita 2 o más datos y variación en cada grupo: se usó el ANOVA clásico.)' }

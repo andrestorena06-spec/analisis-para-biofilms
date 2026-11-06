@@ -144,7 +144,7 @@ export function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCt
 // ---------------------------------------------------------------
 // panel derecho: el resultado de la prueba
 // ---------------------------------------------------------------
-export function PanelResultado({ foco, alDesarrollo, extra }) {
+export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
   const { r, ctrl } = foco
   if (!r) return <section className="tarjeta panel-est"><Vacio texto="Elegí al menos 2 grupos con datos." /></section>
   if (!r.ok) return <section className="tarjeta panel-est"><div className="cabeza-tarjeta"><span className="etiqueta-seccion">Resultado</span></div><Vacio titulo="No se puede hacer la prueba" texto={r.motivo} /></section>
@@ -155,12 +155,13 @@ export function PanelResultado({ foco, alDesarrollo, extra }) {
   return (
     <section className="tarjeta panel-est">
       <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Resultado de la estadística</span><span className="ayuda">α = 0,05</span></div>
+      {contexto && <p className={`contexto-est ${contexto.alerta ? 'alerta' : ''}`}>{contexto.texto}</p>}
       <div className={`veredicto ${sig ? 'dif' : 'ok'}`}>
         <b>{sig ? 'Hay diferencias' : 'No hay diferencia clara'}</b>
         <span>{NOMBRE_TEST[r.tipo]} · {r.global.est} = {f(r.global.valor, 3)}{r.global.df2 ? ` (${r.global.df1}; ${f(r.global.df2, 1)} gl)` : ` (${r.global.df1} gl)`} · p = {pTxt(p)} {sig ? marcaSig(p) : ''}</span>
       </div>
       <p className="lectura">{lecturaDe(r, ctrl)}</p>
-      <Hip titulo="Hipótesis" items={hip.slice(0, 1)} />
+      <details className="plegable"><summary>Hipótesis</summary><Hip titulo="Hipótesis" items={hip.slice(0, 1)} /></details>
 
       <h4>Cómo se eligió la prueba</h4>
       <div className="indicadores">
@@ -183,7 +184,7 @@ export function PanelResultado({ foco, alDesarrollo, extra }) {
               <thead><tr><th>Par</th><th className="num">Diferencia</th><th className="num">p ajustado</th><th>Resultado</th></tr></thead>
               <tbody>
                 {r.pares.map((x) => (
-                  <tr key={x.a + '|' + x.b}>
+                  <tr key={x.a + '|' + x.b} className={finito(x.pa) && x.pa < 0.05 ? 'par-distinto' : 'par-igual'}>
                     <td data-tip={`${x.a}: x̄ = ${f(x.ma, 4)}\n${x.b}: x̄ = ${f(x.mb, 4)}\n${r.tipo === 'kw' ? 'z de Dunn' : r.tipo === 'friedman' ? 'z (rangos de Friedman)' : 't'} = ${f(x.est, 3)}${finito(x.df) ? ` · gl = ${f(x.df, 1)}` : ''}\np sin ajustar = ${pTxt(x.p)}`}>{x.a} vs {x.b}</td>
                     <td className="num">{f(x.dif, 3)}</td>
                     <td className="num">{pTxt(x.pa)}</td>

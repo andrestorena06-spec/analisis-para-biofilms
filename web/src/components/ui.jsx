@@ -149,7 +149,7 @@ function BloqueEstilo({ titulo, v, onChange, conTexto, placeholder }) {
           </div>
         </Campo>
         <div className="muestra-estilo" style={{ fontSize: Math.min(v.size, 26), color: v.color, textDecoration: deco || 'none',
-          fontWeight: v.bold ? 700 : 400, fontStyle: v.italic ? 'italic' : 'normal' }}>Abc 0.123</div>
+          fontWeight: v.bold ? 700 : 400, fontStyle: v.italic ? 'italic' : 'normal' }}>Abc 0,123</div>
       </div>
     </div>
   )
