@@ -8,7 +8,7 @@ export function useAncho() {
   const [w, setW] = useState(900)
   useEffect(() => {
     if (!ref.current) return
-    const ro = new ResizeObserver((es) => setW(Math.min(1000, Math.max(420, Math.floor(es[0].contentRect.width)))))
+    const ro = new ResizeObserver((es) => setW(Math.max(420, Math.floor(es[0].contentRect.width))))
     ro.observe(ref.current)
     return () => ro.disconnect()
   }, [])
@@ -170,7 +170,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
   })
   const y = escalaY(L, eY)
   const cx = (i) => L.left + L.band * (i + 0.5)
-  const bw = Math.min(L.band * 0.62, 140)
+  const bw = Math.min(L.band * 0.62, 38)
   const COLOR_BLANCO = '#cfc8bc'
 
   // etiquetas de clasificación en el margen derecho, sin que se pisen
@@ -345,6 +345,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
   })
   const y = escalaY(L, eY)
   const cx = (i) => L.left + L.band * (i + 0.5)
+  const anchoM = Math.min(L.band * 0.28, 44)   // media de cada muestra
   const vy = (e) => { const v = tv(e.OD); return y(Number.isFinite(v) ? Math.max(v, eY.min) : eY.min) }
 
   const px = (e) => {
@@ -370,8 +371,8 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
 
         {res.map((r, i) => r && (o.errores || o.medias) ? (
           <g key={'m' + i} stroke="#111" strokeWidth="1.4" data-tip={tipGrupo(i)}>
-            <line x1={cx(i) - L.band * 0.28} x2={cx(i) + L.band * 0.28} y1={y(r.m)} y2={y(r.m)} stroke="transparent" strokeWidth="10" />
-            <line x1={cx(i) - L.band * 0.28} x2={cx(i) + L.band * 0.28} y1={y(r.m)} y2={y(r.m)} />
+            <line x1={cx(i) - anchoM} x2={cx(i) + anchoM} y1={y(r.m)} y2={y(r.m)} stroke="transparent" strokeWidth="10" />
+            <line x1={cx(i) - anchoM} x2={cx(i) + anchoM} y1={y(r.m)} y2={y(r.m)} />
             {o.errores && r.err !== null && Number.isFinite(r.err) && (
               <>
                 <line x1={cx(i)} x2={cx(i)} y1={y(r.m - r.err)} y2={y(r.m + r.err)} stroke="transparent" strokeWidth="10" />

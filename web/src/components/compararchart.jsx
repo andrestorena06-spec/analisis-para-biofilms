@@ -74,7 +74,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
   })
   const y = escalaY(L, eY)
   const cx = (i) => L.left + L.band * (i + 0.5)
-  const sw = Math.max(Math.min((L.band * 0.84) / nmax, 78), 9)    // ancho de cada columna
+  const sw = Math.max(Math.min((L.band * 0.84) / nmax, 40), 9)    // ancho de cada columna
   const bw = sw * 0.8
   const yLey = L.top + L.plotH + L.altoEtiquetas + L.altoLeyX + 36 + (o.cv ? ALTO_FILA_CV : 0)
   const errNom = o.errorNombre || 'error'
@@ -148,7 +148,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
                       <path d={`M${mx - 5},${y(b.media)} L${mx},${y(b.media) - 5} L${mx + 5},${y(b.media)} L${mx},${y(b.media) + 5} Z`} fill="#fff" stroke="#222" strokeWidth="1.2" data-tip={tipColumna(b, cab)} />
                     )}
                     {o.puntos && puntos.map((p, j) => (
-                      <circle key={j} cx={mx + (puntos.length > 1 ? (((j * 0.6180339) % 1) - 0.5) * bw * 0.56 : 0)} cy={y(p.v)} r="3.6"
+                      <circle key={j} cx={mx + (puntos.length > 1 ? (((j * 0.6180339) % 1) - 0.5) * Math.max(bw, 32) * 0.56 : 0)} cy={y(p.v)} r="3.6"
                         fill={p.color} fillOpacity="0.92" stroke="#fff" strokeWidth="1" data-tip={p.tip || `${b.placa}\n${unidad} = ${V(p.v)}`} />
                     ))}
                     {o.valores && Number.isFinite(arriba) && (
