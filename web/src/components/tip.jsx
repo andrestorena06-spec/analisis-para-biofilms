@@ -16,22 +16,34 @@ function trozos(s) {
       if (m === 'f') {
         const num = leer(['|']), den = leer(['.'])
         out.push(<span className="ec-frac" key={k}><span>{num}</span><span>{den}</span></span>)
-      } else if (m === 'r') out.push(<span className="ec-raiz" key={k}><i>√</i><span>{leer(['.'])}</span></span>)
+      } else if (m === 'r') out.push(<span className="ec-raiz" key={k}><svg viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.5 14 L3 12.5 L6.5 23 L11.5 0.5" vectorEffect="non-scaling-stroke" /></svg><span>{leer(['.'])}</span></span>)
       else if (m === 's') out.push(<sub key={k}>{leer(['.'])}</sub>)
     }
     return out
   }
   return leer([])
 }
-// El cuerpo del globo: las ecuaciones seguidas van en una grilla con los «=» alineados
+// Una ecuación en una sola fila: izq = paso = paso = resultado (si no entra, sigue abajo cortando en un «=»)
+function Ecuacion({ izq, pasos }) {
+  return (
+    <div className="ec-fila">
+      <span className="ec-izq">{izq}</span>
+      {pasos.map((p, i) => (
+        <span key={i} className={`ec-paso ${i === pasos.length - 1 ? 'ec-res' : ''}`}><i>=</i><span className="ec-der">{trozos(p)}</span></span>
+      ))}
+    </div>
+  )
+}
+// El cuerpo del globo: títulos de cada bloque, ecuaciones y notas
 function Cuerpo({ lineas }) {
   const out = []
-  let eqs = []
-  const cerrar = () => { if (eqs.length) { out.push(<div className="ec-grupo" key={out.length}>{eqs}</div>); eqs = [] } }
-  lineas.forEach((l, i) => {
+  let eq = null
+  const cerrar = () => { if (eq) { out.push(<Ecuacion key={out.length} izq={eq.izq} pasos={eq.pasos} />); eq = null } }
+  lineas.forEach((l) => {
     if (l.startsWith('⟦e⟧')) {
       const [izq, der] = l.slice(3).split('⟦=⟧')
-      eqs.push(<span key={i + 'i'} className="ec-izq">{izq}</span>, <span key={i + 'q'} className="ec-igual">=</span>, <span key={i + 'd'} className="ec-der">{trozos(der)}</span>)
+      if (izq || !eq) { cerrar(); eq = { izq, pasos: [] } }
+      eq.pasos.push(der)
       return
     }
     cerrar()
@@ -108,11 +120,13 @@ export function GloboInfo() {
   if (!t) return null
   const [tit, ...resto] = t.txt.split('\n')
   const conEc = t.txt.includes('⟦e⟧')
-  const ancho = conEc ? 420 : 340
+  // lo que va entre paréntesis al final del título queda como aclaración
+  const cab = (tit.replace('⟦t⟧', '').match(/^(.*?)(?: \((.*)\))?$/) || [])
+  const ancho = conEc ? 400 : 320
   const left = Math.min(Math.max(8, t.x + 14), window.innerWidth - ancho - 8)
   return (
     <div ref={caja} className="globo-info" style={{ left, maxWidth: ancho }}>
-      <b>{tit.replace('⟦t⟧', '')}</b>
+      <b>{cab[1]}{cab[2] && <small>{cab[2]}</small>}</b>
       {resto.length > 0 && <Cuerpo lineas={resto} />}
     </div>
   )

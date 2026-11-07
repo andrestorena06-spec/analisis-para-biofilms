@@ -323,23 +323,6 @@ table.tabla { border-collapse: separate; border-spacing: 0; width: 100%; font-si
 .toasts { position: fixed; right: 18px; top: 132px; display: flex; flex-direction: column; gap: 8px; z-index: 80; }
 .toast { background: var(--panel); color: var(--texto); border: 1px solid var(--borde2); border-left: 3px solid var(--ok); border-radius: 8px; padding: 10px 14px; box-shadow: var(--sombra); max-width: 420px; animation: aparecer .2s; font-size: var(--t-md); }
 .toast.error { border-left-color: var(--peligro); }
-.globo-info { position: fixed; z-index: 9999; pointer-events: none; background: var(--panel); color: var(--texto); border: 1px solid var(--borde2); padding: 8px 11px; border-radius: 8px; font-size: var(--t-sm); line-height: 1.5; box-shadow: var(--sombra); }
-.globo-info b { display: block; font-weight: 600; color: var(--acento-fuerte); margin-bottom: 2px; }
-.globo-cuerpo { color: var(--sec); font-size: var(--t-sm); }
-.globo-linea { white-space: pre-line; }
-.globo-sub { font-weight: 600; color: var(--texto); margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--borde); }
-.globo-cuerpo > .globo-sub:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
-.ec-grupo { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 5px 6px; margin: 5px 0; font-family: 'Cambria Math', Cambria, Georgia, serif; font-size: var(--t-lg); color: var(--texto); }
-.ec-izq { font-style: italic; text-align: right; white-space: nowrap; }
-.ec-igual { color: var(--sec); }
-.ec-der { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; font-variant-numeric: tabular-nums; }
-.ec-frac { display: inline-flex; flex-direction: column; align-items: stretch; text-align: center; line-height: 1.25; }
-.ec-frac > span { padding: 1px 5px; }
-.ec-frac > span:first-child { border-bottom: 1px solid currentColor; }
-.ec-raiz { display: inline-flex; align-items: stretch; }
-.ec-raiz > i { font-style: normal; font-size: 1.5em; line-height: 1; align-self: center; }
-.ec-raiz > span { display: inline-flex; align-items: center; gap: 0 4px; border-top: 1px solid currentColor; padding: 1px 3px 0; }
-.ec-der sub { font-size: .72em; }
 .nota { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; cursor: help; color: var(--sec); font-size: var(--t-sm); margin-left: 4px; font-weight: 400; }
 .nota i { font-style: normal; font-size: var(--t-sm); width: 17px; height: 17px; line-height: 15px; text-align: center; border-radius: 50%; border: 1px solid var(--borde2); background: var(--panel); color: var(--acento); }
 .nota:hover i, .nota:focus i { background: var(--acento-suave); border-color: var(--acento); color: var(--acento-fuerte); }
@@ -695,3 +678,27 @@ tr.placa-oculta > td:not(:last-child) { opacity: .55; }
 .cinta-grupo { padding: 0 4px; }
 .cinta-boton { padding: 5px 3px; min-width: 44px; }
 .tabla.tabla-placas td:last-child { background: var(--panel) !important; z-index: 1; }
+
+/* globo de información: título, bloques y ecuaciones en una fila */
+.globo-info { position: fixed; z-index: 9999; pointer-events: none; background: var(--panel); color: var(--texto); border: 1px solid var(--borde2); border-radius: 10px; padding: 10px 13px; font-size: var(--t-sm); line-height: 1.45; box-shadow: 0 6px 22px rgba(58, 32, 5, .16); }
+.globo-info > b { display: block; font-weight: 600; font-size: var(--t-md); color: var(--texto); }
+.globo-info > b small { display: block; font-weight: 400; font-size: var(--t-xs); color: var(--sec); }
+.globo-cuerpo { color: var(--sec); margin-top: 2px; }
+.globo-linea { white-space: pre-line; }
+.globo-sub { font-size: var(--t-xs); font-weight: 600; color: var(--sec); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--borde); }
+.globo-cuerpo > .globo-sub:first-child { margin-top: 6px; }
+.ec-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 5px 0 3px; color: var(--texto); font-variant-numeric: tabular-nums; }
+.ec-izq { font-style: italic; white-space: nowrap; }
+.ec-paso { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.ec-paso > i { font-style: normal; color: var(--sec); }
+.ec-der { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 4px; min-width: 0; }
+.ec-res .ec-der { font-weight: 600; color: var(--acento-fuerte); }
+.ec-frac { display: inline-flex; flex-direction: column; text-align: center; line-height: 1.3; font-size: var(--t-xs); }
+.ec-frac > span { padding: 0 4px; }
+.ec-frac > span:first-child { border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+.ec-frac > span:last-child { padding-top: 1px; }
+.ec-raiz { display: inline-flex; align-items: stretch; }
+.ec-raiz > svg { width: 11px; height: auto; flex: none; overflow: visible; }
+.ec-raiz > svg path { fill: none; stroke: currentColor; stroke-width: 1; }
+.ec-raiz > span { display: inline-flex; align-items: center; gap: 0 4px; border-top: 1px solid currentColor; padding: 2px 3px 0; }
+.ec-der sub { font-size: .72em; }
