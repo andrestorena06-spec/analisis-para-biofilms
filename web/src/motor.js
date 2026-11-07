@@ -214,7 +214,11 @@ export function estadoPocillos(datos, cfg, exclManual, exclForzado, det) {
     Pocillo: c.Pocillo, Muestra: c.Muestra, Replica: c.Replica, EsBlanco: !!c.EsBlanco, OD: od.get(c.Pocillo),
   })).sort((a, b) => orden[a.Pocillo] - orden[b.Pocillo])
   if (!e.length) return null
+  return marcarAtipicos(e, exclManual, exclForzado, det)
+}
 
+// Marca los valores atípicos de cada grupo (Muestra) y decide cuáles quedan: filas { Pocillo, Muestra, OD }
+export function marcarAtipicos(e, exclManual, exclForzado, det) {
   const metodo = normalizarMetodo(det?.metodo)
   const conf = String(det?.conf || '95')
   const cvMax = finito(Number(det?.cvMax)) && Number(det.cvMax) > 0 ? Number(det.cvMax) : 20

@@ -10,7 +10,7 @@ import { prepararDatos, unidadDe } from '../resumenes.js'
 const finito = Number.isFinite
 
 // La misma comparación con todas las combinaciones razonables de escala, réplica, prueba y ajuste
-export function correrSensibilidad({ s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco }) {
+export function correrSensibilidad({ sinBloque, s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco }) {
   const escalas = [['od', unidadDe('od', X.corregida)], ['ln', unidadDe('ln', X.corregida)], ...(X.sinOdc.length ? [] : [['odc', 'OD ÷ ODc']])]
   const disenos = modo === 'serotipos' ? ['cepa', 'bloque', 'placa'] : conBloque ? ['bloque', 'placa'] : [nivelDatos]
   const NOM_D = { cepa: 'Cepa', bloque: 'Placa como bloque', placa: 'Placa', pocillo: 'Pocillos' }
@@ -21,7 +21,7 @@ export function correrSensibilidad({ s, D, X, variable, modo, conBloque, nivel, 
     disenos.forEach((dis) => {
       const gs = gruposFoco(XX, dis === 'bloque' ? 'placa' : dis).filter((g) => g.v.length)
       if (gs.length < 2) return
-      if (dis === 'bloque' && !puedeBloques(gs)) return
+      if (dis === 'bloque' && (sinBloque || !puedeBloques(gs))) return
       const ctrl = ctrlDe(gs)
       const pruebas = dis === 'bloque' ? [['anova', 'ANOVA en bloques'], ['kw', 'Friedman']] : [['anova', 'ANOVA'], ['welch', 'ANOVA de Welch'], ['kw', 'Kruskal-Wallis']]
       pruebas.forEach(([forz]) => ajustes.forEach((aj) => {

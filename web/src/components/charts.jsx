@@ -315,7 +315,7 @@ export function resumenGrupo(g, tipo, tv = (v) => v) {
   return { m, err, n: u.length }
 }
 
-export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o, est, eje, onClickPunto, onContext, tam, odc, escala, resta = 0 }, svgRef) {
+export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o, est, eje, onClickPunto, onContext, tam, odc, escala, resta = 0, tipPunto }, svgRef) {
   const [wrap, Wmed] = useAncho()
   const W = anchoContenido({ tam, disponible: Wmed, etiquetas: orden, ang: o.rotar, est, derecha: escalaValida(escala, odc) !== 'od' ? 62 : 16,
     banda: Math.max(90, 14 * Math.max(1, ...orden.map((m) => estado.filter((e) => e.Muestra === m).length)) + 24) })
@@ -365,7 +365,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
         <line x1={L.left} x2={L.left + L.plotW} y1={y(Math.max(0, eY.min))} y2={y(Math.max(0, eY.min))} stroke="#444" />
         {rel && ESCALAS[esc].umbrales.filter(([u]) => u > eY.min && u < eY.max).map(([u, t, k]) => (
-          <g key={u} data-tip={`${u} = ${t} de esta placa (${fmt(k * odc, 3)} de OD)\nlímite de clase`}>
+          <g key={u} data-tip={tipPunto ? `${u} = ${t}\nlímite de clase` : `${u} = ${t} de esta placa (${fmt(k * odc, 3)} de OD)\nlímite de clase`}>
             <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#999" strokeDasharray="3 3" />
             <text x={L.left + L.plotW + 6} y={y(u) + 4} style={{ fontSize: 11, fill: '#6b7785' }}>{t}</text>
           </g>
@@ -388,7 +388,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
 
         {o.puntos && estado.map((e) => (
           <g key={e.Pocillo} onClick={() => onClickPunto(e.Pocillo)} style={{ cursor: 'pointer' }}
-            data-tip={`${e.Pocillo} · ${e.Muestra} R${e.Replica}\n${resta ? `OD corregida = ${fmt(e.OD, 4)} (leída ${fmt(e.OD + resta, 4)} − blanco ${fmt(resta, 4)})` : `OD = ${fmt(e.OD, 4)}`}${rel ? `\n${ESCALAS[esc].eje} = ${fmt(tv(e.OD), 3)}` : ''}\n${e.Manual ? 'Excluido manualmente' : e.Motivo || (e.Usado ? 'Aceptado' : 'Excluido')}\nClic: ${e.Usado ? 'excluir' : 'reincorporar'}`}>
+            data-tip={tipPunto ? tipPunto(e) : `${e.Pocillo} · ${e.Muestra} R${e.Replica}\n${resta ? `OD corregida = ${fmt(e.OD, 4)} (leída ${fmt(e.OD + resta, 4)} − blanco ${fmt(resta, 4)})` : `OD = ${fmt(e.OD, 4)}`}${rel ? `\n${ESCALAS[esc].eje} = ${fmt(tv(e.OD), 3)}` : ''}\n${e.Manual ? 'Excluido manualmente' : e.Motivo || (e.Usado ? 'Aceptado' : 'Excluido')}\nClic: ${e.Usado ? 'excluir' : 'reincorporar'}`}>
             <circle cx={px(e)} cy={vy(e)} r="14" fill="transparent" />
             {e.Sospechoso && <circle cx={px(e)} cy={vy(e)} r="9" fill="none" stroke="#f0932b" strokeWidth="2.4" />}
             {e.Usado ? (
@@ -538,6 +538,94 @@ export const GroupedBarChart = forwardRef(function GroupedBarChart({ grupos, pla
           )
         })}
         <text x={L.left + L.plotW} y={L.H - 8} textAnchor="end" style={{ fontSize: 11, fill: '#6b7785' }}>{nota}</text>
+      </svg>
+    </div>
+  )
+})
+
+// ---------------------------------------------------------------
+// UNA CEPA ENTRE LAS PLACAS (revisión entre réplicas): una columna por placa, con la media y el error de cada grupo
+// filas: resultados de la cepa, ya ordenados; cada grupo (Muestra) es un medio, o todas las placas juntas
+// ---------------------------------------------------------------
+export const ReplicasChart = forwardRef(function ReplicasChart({ filas, o, est, eje, escala, onClickPunto, onContext, tam, tipPunto }, svgRef) {
+  const [wrap, Wmed] = useAncho()
+  const labels = filas.map((e) => e.placa)
+  const rel = escala === 'odc'
+  const W = anchoContenido({ tam, disponible: Wmed, etiquetas: labels, ang: o.rotar, est, banda: 104, derecha: rel ? 62 : 16 })
+  const nombres = [...new Set(filas.map((e) => e.Muestra))]
+  const grupos = nombres.map((n) => {
+    const idx = filas.map((e, i) => (e.Muestra === n ? i : -1)).filter((i) => i >= 0)
+    return { n, idx, medio: filas[idx[0]].medio, r: resumenGrupo(filas.filter((e) => e.Muestra === n), o.error) }
+  })
+  const varios = grupos.length > 1
+  const vals = filas.map((e) => e.OD)
+  const conErr = (g) => o.errores && g.r && g.r.err !== null && Number.isFinite(g.r.err)
+  let lo = Math.min(0, ...vals)
+  let hi = Math.max(...vals, ...grupos.map((g) => (g.r ? g.r.m + (conErr(g) ? g.r.err : 0) : 0)), 0.1)
+  if (rel) hi = Math.max(hi, 1.2)
+  hi += (hi - lo) * (0.14 + (varios ? 0.08 : 0))
+  const eY = ejeConRango(ticksBonitos(lo, hi, 6), estiloEscala(est, escala))
+  const yLabels = eY.ticks.map((t) => fmtTick(t, eY.paso))
+  const L = calcularLayout({
+    W, etiquetas: labels, ang: o.rotar, est, yLabels, derecha: rel ? 62 : 16,
+    titulo: !!est.titulo.texto, tituloX: !!est.leyendaX.texto, altoPlot: 280 + est.valores.size * 2, extraAbajo: 40, fijoH: tam ? tam.h : 0,
+    anchoTituloY: medir(est.leyendaY.texto || eje, est.leyendaY.size, est.leyendaY.bold, est.leyendaY.italic),
+  })
+  const y = escalaY(L, eY)
+  const cx = (i) => L.left + L.band * (i + 0.5)
+  const yv = (v) => y(Math.max(v, eY.min))
+  const umbrales = rel ? [[1, 'ODc'], [2, '2 × ODc'], [4, '4 × ODc']].filter(([u]) => u <= eY.max) : []
+  return (
+    <div ref={wrap} className="chart-wrap" onContextMenu={onContext}>
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${L.H}`} width={W} height={L.H} fontFamily={FUENTE}>
+        <rect width={W} height={L.H} fill="#fff" />
+        <Titulo W={W} est={est} />
+        {varios && grupos.map((g, k) => k % 2 === 1 && <rect key={g.n} x={L.left + L.band * g.idx[0]} y={L.top} width={L.band * g.idx.length} height={L.plotH} fill="#f6f1e8" fillOpacity="0.6" />)}
+        <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke="#444" />
+        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke="#444" />
+        {eY.min < 0 && <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke="#888" strokeDasharray="3 3" />}
+        {umbrales.map(([u, t]) => (
+          <g key={u} data-tip={`${u} = ${t}\nlímite de clase`}>
+            <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#555" strokeDasharray="2 3" />
+            <text x={L.left + L.plotW + 4} y={y(u) + 4} style={{ fontSize: 11, fill: '#555' }}>{t}</text>
+          </g>
+        ))}
+        {grupos.map((g) => {
+          const x1 = L.left + L.band * g.idx[0] + 8, x2 = L.left + L.band * (g.idx[g.idx.length - 1] + 1) - 8, xm = (x1 + x2) / 2
+          const usados = filas.filter((e) => e.Muestra === g.n && e.Usado).map((e) => e.OD)
+          const txt = g.r ? (conErr(g) ? `${fmt(g.r.m)} ± ${fmt(g.r.err)}` : fmt(g.r.m)) : ''
+          return (
+            <g key={g.n} data-tip={dGrupo(g.n, usados, o.errores ? o.error : null)}>
+              {varios && <text x={xm} y={L.top + 14} textAnchor="middle" style={{ fontSize: 12, fontWeight: 600, fill: '#333' }}>{g.medio || 'sin medio'}</text>}
+              {g.r && conErr(g) && <rect x={x1} y={y(g.r.m + g.r.err)} width={x2 - x1} height={Math.max(y(g.r.m - g.r.err) - y(g.r.m + g.r.err), 0.5)} fill="#2f5d8a" fillOpacity="0.1" />}
+              {g.r && <line x1={x1} x2={x2} y1={y(g.r.m)} y2={y(g.r.m)} stroke="#111" strokeWidth="1.6" />}
+              {g.r && <line x1={x1} x2={x2} y1={y(g.r.m)} y2={y(g.r.m)} stroke="transparent" strokeWidth="10" />}
+              {o.medias && g.r && <EtiquetaFondo x={xm} y={L.top + (varios ? 30 : 14)} est={est.valores} texto={txt} />}
+            </g>
+          )
+        })}
+        {o.puntos && filas.map((e, i) => (
+          <g key={e.Pocillo} onClick={() => onClickPunto(e.Pocillo)} style={{ cursor: 'pointer' }} data-tip={tipPunto(e)}>
+            <circle cx={cx(i)} cy={yv(e.OD)} r="16" fill="transparent" />
+            {e.Sospechoso && <circle cx={cx(i)} cy={yv(e.OD)} r="11" fill="none" stroke="#f0932b" strokeWidth="2.4" />}
+            {e.Usado ? <circle cx={cx(i)} cy={yv(e.OD)} r="6.5" fill="#2f5d8a" /> : (
+              <g stroke="#c0392b" strokeWidth="2.6">
+                <line x1={cx(i) - 6} x2={cx(i) + 6} y1={yv(e.OD) - 6} y2={yv(e.OD) + 6} />
+                <line x1={cx(i) - 6} x2={cx(i) + 6} y1={yv(e.OD) + 6} y2={yv(e.OD) - 6} />
+              </g>
+            )}
+            <text x={cx(i) + 13} y={yv(e.OD) + 4} style={{ fontSize: 11.5, fill: e.Usado ? '#333' : '#c0392b' }}>{fmt(e.OD)}</text>
+          </g>
+        ))}
+        <EtiquetasX labels={labels} cx={cx} yBase={y(eY.min)} ang={o.rotar} est={est} />
+        <LeyendaX L={L} est={est} />
+        <g transform={`translate(${W / 2},${L.H - 14})`} style={{ fontSize: 12, fill: '#333' }}>
+          <circle cx="-120" cy="-4" r="5" fill="#2f5d8a" /><text x="-110">Aceptado</text>
+          <g stroke="#c0392b" strokeWidth="2.2"><line x1="-20" x2="-10" y1="-9" y2="1" /><line x1="-20" x2="-10" y1="1" y2="-9" /></g>
+          <text x="-4">Excluido</text>
+          <circle cx="75" cy="-4" r="7" fill="none" stroke="#f0932b" strokeWidth="2.2" /><text x="87">Sospechoso</text>
+        </g>
       </svg>
     </div>
   )

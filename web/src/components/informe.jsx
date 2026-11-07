@@ -144,7 +144,7 @@ export function abrirInforme(s) {
   let comparacion = ''
   if (conAn.length > 1) {
     const oc = s.opts.comparar
-    const D = armarComparacion(s)
+    const D = armarComparacion(s.entrePlacas || s)
     const el = {
       barras: oc.barras !== false, barrasError: oc.barrasError !== false, caja: oc.caja ?? !!oc.cajas, mediana: oc.mediana ?? !!oc.cajas, bigotes: oc.bigotes ?? !!oc.cajas, media: oc.media ?? !!oc.cajas, puntos: oc.puntos !== false,
       valores: oc.valores !== false, errores: !!oc.errores, rotar: oc.rotar ?? 45, cv: !!oc.cv && oc.modo !== 'pocillo', errorTipo: oc.error,
@@ -160,9 +160,21 @@ export function abrirInforme(s) {
         <div class="fig">${fig}</div>${tabla(Object.keys(filasT[0]), filasT)}</section>`
     }
   }
+  // revisión entre réplicas: el promedio de cada placa para cada cepa y lo que quedó afuera de las comparaciones
+  let entreReplicas = ''
+  const Rp = s.replicas
+  if (Rp?.estado?.length && conAn.length > 1) {
+    const ejeR = Rp.escala === 'odc' ? 'OD ÷ ODc' : s.ejeOD
+    const gR = svgStr(<ExcluirChart estado={Rp.estado} orden={Rp.orden} o={s.opts.replicas} est={s.estilos.excluir} eje={ejeR} odc={Rp.escala === 'odc' ? 1 : undefined} escala={Rp.escala} tipPunto={() => ''} onClickPunto={noop} tam={{ w: 900, h: 520 }} />)
+    const fueraR = Rp.estado.filter((e) => !e.Usado)
+    const com = (s.opts.replicas.comentario || '').trim()
+    entreReplicas = `<section class="placa salto"><h2>Revisión entre réplicas</h2>
+      <p class="meta">Cada punto es el promedio de una placa para esa cepa (${esc(ejeR)}). ${fueraR.length ? `Resultados excluidos de las comparaciones entre placas: ${fueraR.map((e) => `<b>${esc(e.placa)}</b> · ${esc(e.Cepa)}`).join('; ')}.` : 'No se excluyó ningún resultado.'}</p>
+      <div class="fig">${gR}</div>${com ? `<h3>Comentarios</h3><p class="comentarios">${esc(com).replace(/\n/g, '<br>')}</p>` : ''}</section>`
+  }
   // resúmenes de las pruebas, con las opciones de la pestaña Estadística
   let estadistica = ''
-  if (conAn.length > 1) { try { estadistica = estadisticaHTML(resumenesInforme(s)) } catch (e) { estadistica = `<section class="placa salto"><h2>Estadística</h2><p>No se pudieron calcular los resúmenes: ${esc(e.message)}</p></section>` } }
+  if (conAn.length > 1) { try { estadistica = estadisticaHTML(resumenesInforme(s.entrePlacas || s)) } catch (e) { estadistica = `<section class="placa salto"><h2>Estadística</h2><p>No se pudieron calcular los resúmenes: ${esc(e.message)}</p></section>` } }
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de biofilm</title><style>
     @page { size: A4; margin: 14mm 12mm; }
     body { font-family: 'Segoe UI', Arial, sans-serif; color: #2b2118; font-size: 11px; line-height: 1.4; }
@@ -185,7 +197,7 @@ export function abrirInforme(s) {
       <p><b>Valores atípicos.</b> Método: ${esc(METODOS[det.metodo] || det.metodo)}${det.metodo === 'cv' ? ` (CV máximo ${esc(det.cvMax)} %)` : ` (confianza ${esc(det.conf)} %)`}; ${det.usar ? 'los sospechosos se excluyeron automáticamente' : 'los sospechosos solo se marcaron'}. Las exclusiones manuales están reflejadas en las tablas.</p>
       <p><b>Errores.</b> DE = desviación estándar muestral (n − 1); SEM = DE/√n; IC 95 % = t(0,975; n − 1) × SEM. En las comparaciones cada placa es una réplica.</p>
     </div>
-    ${secciones.join('')}${comparacion}${estadistica}
+    ${secciones.join('')}${entreReplicas}${comparacion}${estadistica}
   </body></html>`
 
   // en el celular el cuadro de impresión no se abre desde un marco oculto: el informe se abre en otra pestaña

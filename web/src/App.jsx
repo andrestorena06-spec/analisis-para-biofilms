@@ -20,6 +20,7 @@ import { Icono, LogoPlaca } from './components/iconos.jsx'
 import { MenuContextual, useMenuContextual } from './components/ui.jsx'
 import { descargarBlob, fmt } from './utils.js'
 import { corregirAnalisis } from './correccion.js'
+import { analisisEntrePlacas, analizarReplicas } from './replicas.js'
 
 const CLAVE_TEMA = 'biofilm-v3-tema'
 const CLAVE_MENU = 'biofilm-v3-menu-corto'
@@ -161,6 +162,10 @@ export default function App() {
     ? Object.fromEntries(Object.entries(analisisLeido).map(([id, a]) => [id, a ? corregirAnalisis(a) : a]))
     : analisisLeido), [analisisLeido, restarBlanco])
   const analisis = activa ? analisisMap[activa.id] || null : null
+  // revisión entre réplicas: lo excluido deja de contar en las comparaciones entre placas
+  const replicas = useMemo(() => analizarReplicas(placas, analisisMap, exp?.muestras || [], exp?.opts?.replicas), [placas, analisisMap, exp?.muestras, exp?.opts?.replicas])
+  const replicasFuera = useMemo(() => replicas.estado.filter((e) => !e.Usado), [replicas])
+  const analisisEntre = useMemo(() => analisisEntrePlacas(analisisMap, replicasFuera), [analisisMap, replicasFuera])
   const muestras = exp?.muestras || []
   const ordenMuestras = useMemo(() => {
     const pres = [...new Set((analisis?.estado || []).map((e) => e.Muestra))]
@@ -209,7 +214,7 @@ export default function App() {
     blancosUsados: activa?.blancosUsados ?? null, setBlancosUsados: (b) => activa && actualizar(activa.id, { blancosUsados: b }),
     // comentarios de la revisión de cada placa (texto libre: el análisis de quien revisa)
     setRevision: (id, t) => actualizar(id, { revision: t }),
-    analisis, ordenMuestras, ejeOD, ejeODLeida,
+    analisis, ordenMuestras, ejeOD, ejeODLeida, replicas, replicasFuera,
     // corrección por blanco: la placa activa y todas con la OD leída (para el ODc)
     // Restar blanco es uno solo para todo el programa (se cambia desde ODc y mapa, Revisión, Gráfico o Estadística).
     // Al activarlo, lo que estaba en OD ÷ ODc pasa a OD: esa razón se hace con la OD leída y no se vería el cambio.
@@ -236,6 +241,8 @@ export default function App() {
     eliminarMuestra: (m) => { upd((e) => sacarMuestra(e, m)); avisar(`Muestra «${m}» eliminada (Ctrl + Z para deshacer).`) },
   }
 
+  if (s) s.entrePlacas = { ...s, analisisMap: analisisEntre }
+
   // ---------- barra de estado ----------
   const estado = (() => {
     if (!exp) return 'Sin experimento abierto · los experimentos se guardan solos en «Recientes»'
@@ -253,7 +260,7 @@ export default function App() {
   })()
 
   const Vista = exp && !enArchivo ? PASOS[tab][1] : null
-  const verPlacas = Vista && CON_PLACAS.has(tab) && !(tab === 'grafico' && ['comparar', 'orden'].includes(exp.opts.comparar.vistaG))
+  const verPlacas = Vista && CON_PLACAS.has(tab) && !(tab === 'grafico' && ['comparar', 'orden'].includes(exp.opts.comparar.vistaG)) && !(tab === 'calidad' && exp.opts.excluir.entreReplicas)
 
   return (
     <CintaCtx.Provider value={nodoCinta}>

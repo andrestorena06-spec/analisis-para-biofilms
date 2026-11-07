@@ -435,7 +435,8 @@ function Ejemplo({ s }) {
 // ===============================================================
 // ESTADÍSTICA EXTENSIVA (pestaña Datos)
 // ===============================================================
-export function MetodoEstadistico({ s }) {
+export function MetodoEstadistico({ s: s0 }) {
+  const s = s0.entrePlacas || s0
   return (
     <section className="tarjeta metodo metodo-est">
       <h2>Estadística: cálculos, razones y lógica de cada método</h2>

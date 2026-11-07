@@ -65,6 +65,7 @@ export function CompararTab({ s, grupoVista }) {
     setO('ocultos', v ? sin : [...sin, ...ks])
   }
   const nOcultas = (o.ocultos || []).length
+  const fueraRep = (s.replicasFuera || []).filter((x) => placasSel.some((p) => p.id === x.placaId))
 
   return (
     <div>
@@ -186,6 +187,7 @@ export function CompararTab({ s, grupoVista }) {
 
       {sinOdc.length > 0 && <p className="aviso-caja">Sin ODc (faltan blancos aceptados), no entran en la escala {ESCALAS[escala].eje}: {sinOdc.map((p) => p.nombre).join(', ')}.</p>}
       {modo === 'medio' && sinMedio.length > 0 && <p className="aviso-caja">Placas sin medio indicado (no se muestran): {sinMedio.map((p) => p.nombre).join(', ')}. Elegí su medio en «Pocillos» o en «Placas».</p>}
+      {fueraRep.length > 0 && <p className="aviso-caja info" data-tip={fueraRep.map((x) => `${x.placa} · ${x.Cepa}`).join('\n')}>{fueraRep.length} {fueraRep.length === 1 ? 'cepa excluida' : 'cepas excluidas'} de alguna placa en «Revisión entre réplicas» no {fueraRep.length === 1 ? 'entra' : 'entran'} en este gráfico.</p>}
       {unaPlaca && <p className="aviso-caja">Con una sola placa no hay error ni dispersión entre placas. Elegí «Pocillos» para verlos.</p>}
       {medios1.length > 0 && <p className="aviso-caja">Con una sola placa en {medios1.join(', ')} no hay error ni dispersión entre placas. Elegí «Pocillos» para verlos.</p>}
       <section className="tarjeta">

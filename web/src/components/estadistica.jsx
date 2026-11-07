@@ -29,7 +29,9 @@ const UMBRALES = { odc: [[1, 'ODc'], [2, '2 × ODc'], [4, '4 × ODc']] }
 // ===============================================================
 // PÁGINA
 // ===============================================================
-export function EstadisticaTab({ s }) {
+export function EstadisticaTab({ s: s0 }) {
+  // lo excluido en «Revisión entre réplicas» no entra en las pruebas
+  const s = s0.entrePlacas || s0
   const o = s.opts.comparar
   const setO = (k, v) => s.setOpts((x) => ({ ...x, comparar: { ...x.comparar, [k]: v } }))
   const setVarios = (c) => s.setOpts((x) => ({ ...x, comparar: { ...x.comparar, ...c } }))
@@ -91,11 +93,13 @@ export function EstadisticaTab({ s }) {
   const ctrlDe = (gs) => (comp === 'control' && gs.length > 1 ? (gs.some((g) => g.nombre === o[ctrlKey]) ? o[ctrlKey] : gs[0].nombre) : null)
   const nombrePlaca = (id) => X.placas.find((p) => p.id === id)?.nombre || id
   // con la placa como bloque: ANOVA en bloques o Friedman; si no hay 3 placas con todos los grupos, se compara sin bloque
+  // una cepa excluida de una placa deja esa placa incompleta: se compara sin bloque, con los datos de todas las placas
+  const fueraRep = (s.replicasFuera || []).filter((x) => placasUsadas.some((p) => p.id === x.placaId) && (modo === 'cepas' ? cepasIn.includes(x.Cepa) : modo === 'serotipos' ? cepasSero.includes(x.Cepa) && serosIn.includes(seroC(x.Cepa)) : true))
   const correrPrueba = (c, niv, forz, aj, ctrl) => {
     if (niv === 'bloque') {
-      if (puedeBloques(c)) return analizarBloques(c, forz, ctrl, aj, nombrePlaca)
+      if (!fueraRep.length && puedeBloques(c)) return analizarBloques(c, forz, ctrl, aj, nombrePlaca)
       const r = analizar(c, forz, ctrl, aj)
-      if (r.ok) r.razon = 'No se pudo usar la placa como bloque (hacen falta 3 o más placas con todos los grupos): se compara sin bloque. ' + r.razon
+      if (r.ok) r.razon = (fueraRep.length ? 'Hay cepas excluidas en «Revisión entre réplicas»: se compara sin bloque. ' : 'No se pudo usar la placa como bloque (hacen falta 3 o más placas con todos los grupos): se compara sin bloque. ') + r.razon
       return r
     }
     return analizar(c, forz, ctrl, aj)
@@ -120,21 +124,22 @@ export function EstadisticaTab({ s }) {
   const gruposFoco = (XX, niv) => (modo === 'medios' || modo === 'placas' ? gruposDe(cepaSel, XX, niv) : modo === 'libre' ? (libres.length ? gruposLibre(libres[iLibre], XX, niv) : []) : modo === 'serotipos' && !serosIn.length ? [] : gruposDe(undefined, XX, niv))
   // escala sugerida por los datos (cómo crece la DE con la media), siempre mirando la OD sin transformar
   const sugerida = foco && variable !== 'odc' ? escalaSugerida(gruposFoco(variable === 'od' ? X : prepararDatos(s, D, 'od'), nivelDatos)) : null
-  const bloquePosible = conBloque && foco && puedeBloques(foco.grupos.filter((g) => g.v.length))
+  const bloquePosible = conBloque && foco && !fueraRep.length && puedeBloques(foco.grupos.filter((g) => g.v.length))
 
   // lo que define el resultado, en una línea junto a él: qué placas entran y cómo se comparó
   const contexto = foco?.r?.ok ? {
-    alerta: modo !== 'libre' && placasUsadas.length < placasAlc.length,
+    alerta: fueraRep.length > 0 || (modo !== 'libre' && placasUsadas.length < placasAlc.length),
     texto: [
       modo !== 'libre' && `${placasUsadas.length} de ${placasAlc.length} placas`,
+      fueraRep.length > 0 && `${fueraRep.length} ${fueraRep.length === 1 ? 'cepa excluida' : 'cepas excluidas'} de alguna placa`,
       NOMBRE_TEST[foco.r.tipo],
-      foco.r.bloques ? 'placa como bloque' : nivel === 'bloque' ? 'sin bloque: hacen falta 3 placas con todos los grupos' : nivel === 'pocillo' ? 'pocillos como réplica' : nivel === 'cepa' ? 'cepa como réplica' : 'placa como réplica',
+      foco.r.bloques ? 'placa como bloque' : nivel === 'bloque' ? (fueraRep.length ? 'sin bloque: hay cepas excluidas entre réplicas' : 'sin bloque: hacen falta 3 placas con todos los grupos') : nivel === 'pocillo' ? 'pocillos como réplica' : nivel === 'cepa' ? 'cepa como réplica' : 'placa como réplica',
       foco.r.pares[0]?.metodo && `pares con ${foco.r.pares[0].metodo}`,
     ].filter(Boolean).join(' · '),
   } : null
 
   // ---- sensibilidad: la misma comparación con todas las combinaciones razonables de escala, réplica, prueba y ajuste ----
-  const sensibilidad = () => correrSensibilidad({ s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco })
+  const sensibilidad = () => correrSensibilidad({ sinBloque: fueraRep.length > 0, s, D, X, variable, modo, conBloque, nivel, nivelDatos, comp, ajuste, gruposFoco, ctrlDe, nombrePlaca, bloquePosible, foco })
 
   // pocillos excluidos que tocan a la selección
   const fueraFoco = !foco ? [] : X.fuera.filter((x) => (modo === 'cepas' ? cepasIn.includes(x.cepa) : modo === 'serotipos' ? cepasSero.includes(x.cepa) && serosIn.includes(seroC(x.cepa)) : modo === 'libre' ? true : x.cepa === cepaSel) && (modo === 'libre' || placasUsadas.some((p) => p.id === x.placaId)))

@@ -9,6 +9,7 @@ import { Nota } from './tip.jsx'
 import { PasoAPaso } from './pasos.jsx'
 import { MetodoEstadistico } from './metodoest.jsx'
 import { abrirInforme } from './informe.jsx'
+import { GrupoEntreReplicas, RevisionReplicas } from './replicas.jsx'
 import { descargarExcelCompleto } from './resumen.jsx'
 import { resumenBlancos } from '../blancos.js'
 import { excelDe } from '../api.js'
@@ -38,29 +39,31 @@ const GrupoImagen = ({ onGuardar, onEstilo, onRango }) => (
 // Comentarios de la revisión: texto libre de cada placa (qué se excluyó y por qué, cómo se ve la placa, conclusiones).
 // Se guarda en la sesión y sale en el informe. Se escribe en un estado local y se guarda al dejar de escribir o al salir
 // del cuadro, para no llenar el deshacer con cada letra.
-function ComentariosRevision({ s }) {
-  const id = s.activaId, guardado = s.a?.revision || ''
+export function ComentariosRevision({ id, guardado, onGuardar, nota, placeholder }) {
   const [txt, setTxt] = useState(guardado)
   const reloj = useRef(null), caja = useRef(null)
   // al cambiar de placa, o con deshacer / rehacer, se muestra lo guardado (si no se está escribiendo)
   useEffect(() => { if (document.activeElement !== caja.current) setTxt(guardado) }, [id, guardado])
   useEffect(() => () => clearTimeout(reloj.current), [id])
-  const guardar = (v) => { clearTimeout(reloj.current); if (v !== guardado) s.setRevision(id, v) }
+  const guardar = (v) => { clearTimeout(reloj.current); if (v !== guardado) onGuardar(v) }
   return (
     <section className="tarjeta">
       <div className="cabeza-tarjeta">
         <span className="etiqueta-seccion">Comentarios</span>
-        <span className="ayuda"><Nota>Tu análisis de esta placa: qué excluiste y por qué, cómo se ven los blancos y las réplicas, qué conclusiones sacás. Se guarda con la sesión y sale en el informe, debajo de la revisión de los pocillos.</Nota></span>
+        <span className="ayuda"><Nota>{nota}</Nota></span>
       </div>
-      <textarea ref={caja} className="comentarios-rev" rows={5} value={txt}
-        placeholder="Ej.: «Excluí B3 por una burbuja. Blancos parejos; L201 con CV alto en las tres réplicas.»"
-        onChange={(e) => { const v = e.target.value; setTxt(v); clearTimeout(reloj.current); reloj.current = setTimeout(() => s.setRevision(id, v), 800) }}
+      <textarea ref={caja} className="comentarios-rev" rows={5} value={txt} placeholder={placeholder}
+        onChange={(e) => { const v = e.target.value; setTxt(v); clearTimeout(reloj.current); reloj.current = setTimeout(() => onGuardar(v), 800) }}
         onBlur={() => guardar(txt)} />
     </section>
   )
 }
 
 export function ExcluirTab({ s }) {
+  return s.opts.excluir.entreReplicas ? <RevisionReplicas s={s} /> : <RevisionPocillos s={s} />
+}
+
+function RevisionPocillos({ s }) {
   const svg = useRef()
   const [menu, abrirMenu, cerrarMenu] = useMenuContextual()
   const [dlg, setDlg] = useState(false)
@@ -114,6 +117,7 @@ export function ExcluirTab({ s }) {
           <InterruptorCinta simbolo="±" texto="Error" valor={o.errores} onChange={(v) => setO('errores', v)} tip="Agrega el error junto al valor medio" />
           <CampoCinta etiqueta="Error"><Select value={o.error} onChange={(v) => setO('error', v)} opciones={ERRORES} /></CampoCinta>
         </Grupo>
+        <GrupoEntreReplicas s={s} />
         <BotonOpciones activo={mas} onClick={() => setMas(!mas)} tip="Orden, rotación e imagen" />
       </Cinta>
       <Cajon titulo="Más opciones" abierto={mas} onClose={() => setMas(false)}>
@@ -144,7 +148,9 @@ export function ExcluirTab({ s }) {
             : <span className="ayuda">No hay pocillos excluidos en esta placa.</span>}
         </div>
       </section>
-      <ComentariosRevision s={s} />
+      <ComentariosRevision id={s.activaId} guardado={s.a?.revision || ''} onGuardar={(v) => s.setRevision(s.activaId, v)}
+        nota="Tu análisis de esta placa: qué excluiste y por qué, cómo se ven los blancos y las réplicas, qué conclusiones sacás. Se guarda con la sesión y sale en el informe, debajo de la revisión de los pocillos."
+        placeholder="Ej.: «Excluí B3 por una burbuja. Blancos parejos; L201 con CV alto en las tres réplicas.»" />
       <MenuContextual menu={menu} items={[
         ['Estilo de texto…', () => { cerrarMenu(); setDlg(true) }],
         ['Rango del eje Y…', () => { cerrarMenu(); setRng(true) }],

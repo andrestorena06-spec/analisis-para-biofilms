@@ -28,6 +28,6 @@ export function GraficoPestana({ s }) {
       ]} />
     </Grupo>
   </>)
-  if (vista === 'orden') return <OrdenTab s={s} grupoVer={grupoVer} />
-  return vista === 'placa' ? <GraficoTab s={s} grupoVista={grupoVista} /> : <CompararTab s={s} grupoVista={grupoVista} />
+  if (vista === 'orden') return <OrdenTab s={s.entrePlacas} grupoVer={grupoVer} />
+  return vista === 'placa' ? <GraficoTab s={s} grupoVista={grupoVista} /> : <CompararTab s={s.entrePlacas} grupoVista={grupoVista} />
 }

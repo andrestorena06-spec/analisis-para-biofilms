@@ -702,3 +702,12 @@ tr.placa-oculta > td:not(:last-child) { opacity: .55; }
 .ec-raiz > svg path { fill: none; stroke: currentColor; stroke-width: 1; }
 .ec-raiz > span { display: inline-flex; align-items: center; gap: 0 4px; border-top: 1px solid currentColor; padding: 2px 3px 0; }
 .ec-der sub { font-size: .72em; }
+.grupo-replicas { display: flex; flex-shrink: 0; }
+.grupo-replicas .cinta-boton { white-space: normal; width: 86px; line-height: 1.15; text-align: center; }
+
+/* revisión entre réplicas: elegir la cepa */
+.selector-cepa { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.selector-cepa .fichas { flex: 1; min-width: 0; }
+.marca-sosp, .marca-excl { display: inline-grid; place-items: center; min-width: 17px; height: 17px; border-radius: 99px; font-style: normal; font-size: var(--t-xs); font-weight: 600; color: #fff; }
+.marca-sosp { background: #d97f1e; }
+.marca-excl { background: #c0392b; }

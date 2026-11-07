@@ -1,3 +1,4 @@
+import { replicasDef } from './replicas.js'
 // ============================================================
 // Experimento de biofilm: todo lo que se guarda (placas con los datos del Excel, configuración de pocillos,
 // muestras, medios, exclusiones, ajustes, estilos y los datos del experimento).
@@ -11,6 +12,7 @@ export const MEDIOS_DEF = ['BHI', 'TSBye']
 export const nuevoId = () => Math.random().toString(36).slice(2, 10)
 
 export const optsDef = () => ({
+  replicas: replicasDef(),
   excluir: { puntos: true, medias: true, errores: false, error: 'sd', rotar: 45 },
   barras: {
     error: 'ic95', orden: 'lista', color: 'clase', puntos: true, medias: true, errores: true,
@@ -126,6 +128,7 @@ export const nombreArchivo = (exp) => `${(exp.info.nombre || 'sesion_biofilm').r
 const cambiaEn = (v, cambia) => (Array.isArray(v) ? v.map(cambia) : cambia(v))
 export function renombrarMuestra(exp, viejo, nuevo) {
   const cambia = (m) => (m === viejo ? nuevo : m)
+  const cambiaClave = (k) => { const i = k.indexOf('|'); return k.slice(i + 1) === viejo ? `${k.slice(0, i)}|${nuevo}` : k }
   const o = exp.opts
   return {
     ...exp,
@@ -135,6 +138,7 @@ export function renombrarMuestra(exp, viejo, nuevo) {
     opts: {
       ...o,
       barras: { ...o.barras, muestrasFuera: o.barras.muestrasFuera ? o.barras.muestrasFuera.map(cambia) : o.barras.muestrasFuera },
+      replicas: { ...o.replicas, manual: (o.replicas?.manual || []).map(cambiaClave), forzado: (o.replicas?.forzado || []).map(cambiaClave) },
       comparar: {
         ...o.comparar,
         ocultos: (o.comparar.ocultos || []).map((k) => { const [id, m] = k.split('|'); return m === viejo ? `${id}|${nuevo}` : k }),
