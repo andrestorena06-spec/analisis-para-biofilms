@@ -77,13 +77,13 @@ export const fmt = (x, d = 3) => (Number.isFinite(x) ? dec(x, d) : 'NA')
 const SUB = '₀₁₂₃₄₅₆₇₈₉'
 export const sub = (n) => String(n).replace(/\d/g, (d) => SUB[Number(d)])
 
-// Colores por muestra: tonos repartidos en el círculo (como scales::hue_pal), apagados para combinar con las clases
+// Colores por muestra (equivalente a scales::hue_pal)
 export function paletaMuestras(muestras) {
   const n = muestras.length
   const out = {}
   muestras.forEach((m, i) => {
     const h = (15 + (360 * i) / Math.max(n, 1)) % 360
-    out[m] = `hsl(${h.toFixed(0)}, 36%, 56%)`
+    out[m] = `hsl(${h.toFixed(0)}, 62%, 52%)`
   })
   return out
 }

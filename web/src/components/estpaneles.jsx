@@ -35,6 +35,9 @@ export function Fichas({ etiqueta, tip, opciones, activa, onClick, multi, extra 
 // ---------------------------------------------------------------
 // gráfico de los grupos: cada punto es un valor que entra en la prueba (placa o pocillo), con la media ± DE y la letra
 // ---------------------------------------------------------------
+// puntos con el tono apagado de los colores de clase (el color de la placa, con menos saturación)
+const suave = (c) => { const m = /hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/.exec(c || ''); return m ? `hsl(${m[1]}, ${Math.min(Number(m[2]), 40)}%, ${Math.min(Number(m[3]) + 4, 90)}%)` : c }
+
 function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
   const vals = grupos.flatMap((g) => g.v)
   if (!vals.length) return null
@@ -77,7 +80,7 @@ function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
               </g>
             )}
             {g.det.map((d, k) => (
-              <circle key={k} cx={cx + ((k % 5) - 2) * paso + 0.5 * paso * (Math.floor(k / 5) % 2)} cy={y(d.y)} r="3.8" fill={colorDe(d)} stroke={TEMA.tinta} strokeWidth={TEMA.contorno}
+              <circle key={k} cx={cx + ((k % 5) - 2) * paso + 0.5 * paso * (Math.floor(k / 5) % 2)} cy={y(d.y)} r="3.8" fill={suave(colorDe(d))} stroke={TEMA.tinta} strokeWidth={TEMA.contorno}
                 data-tip={`${g.nombre}\n${d.etq}: ${f(d.y, 4)}`} />
             ))}
             {letras?.[g.nombre] && finito(cima) && <text x={cx} y={Math.max(y(cima) - 8, m.t - 8)} textAnchor="middle" fontSize="13" fontWeight="700" fill={TEMA.tinta}>{letras[g.nombre]}</text>}
