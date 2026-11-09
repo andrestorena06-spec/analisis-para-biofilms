@@ -4,7 +4,7 @@ import { ACEPTA_LIBRO, TEXTO_FORMATOS } from '../libro.js'
 import { Icono } from './iconos.jsx'
 import { BotonCinta, CampoCinta, Cinta, Grupo } from './cinta.jsx'
 import { Modal, Num, Select, aNumero } from './ui.jsx'
-import { FILAS, fmt, paletaMuestras } from '../utils.js'
+import { FILAS, fmt, paletaPlacas } from '../utils.js'
 
 const COLS = Array.from({ length: 12 }, (_, i) => i + 1)
 
@@ -89,7 +89,7 @@ export function PlacasVista({ s }) {
   const [verPrevia, setVerPrevia] = useState(false)
   const inputRef = useRef()
   const destinoRef = useRef(null)
-  const colores = paletaMuestras(s.placas.map((p) => p.id))
+  const colores = paletaPlacas(s.placas).placa
   const act = s.a
 
   const abrirArchivos = async (files, idDestino = null) => {

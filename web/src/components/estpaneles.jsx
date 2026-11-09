@@ -6,7 +6,9 @@ import { desvio, marcaSig, media } from '../estadistica.js'
 import { dDE, dMedia } from '../calculos.js'
 import { FUENTE, fmtTick, ticksBonitos } from '../utils.js'
 import { TEMA } from '../tema.js'
-import { useRef } from 'react'
+import { forwardRef, useRef, useState } from 'react'
+import { ExportDialog } from './exportar.jsx'
+import { MenuContextual, tamDe, useMenuContextual } from './ui.jsx'
 import { ExportarFig } from './exportarfig.jsx'
 
 const finito = Number.isFinite
@@ -35,13 +37,10 @@ export function Fichas({ etiqueta, tip, opciones, activa, onClick, multi, extra 
 // ---------------------------------------------------------------
 // gráfico de los grupos: cada punto es un valor que entra en la prueba (placa o pocillo), con la media ± DE y la letra
 // ---------------------------------------------------------------
-// puntos con el tono apagado de los colores de clase (el color de la placa, con menos saturación)
-const suave = (c) => { const m = /hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/.exec(c || ''); return m ? `hsl(${m[1]}, ${Math.min(Number(m[2]), 40)}%, ${Math.min(Number(m[3]) + 4, 90)}%)` : c }
-
-function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
+const Dispersion = forwardRef(function Dispersion({ grupos, letras, colorDe, unidad, umbrales, tam, onContext }, ref) {
   const vals = grupos.flatMap((g) => g.v)
   if (!vals.length) return null
-  const W = 560, H = 270, m = { l: 54, r: 12, t: 24, b: 58 }
+  const W = Math.round(tam?.w || 560), H = Math.round(tam?.h || 270), m = { l: 54, r: 12, t: 24, b: 58 }
   const lo = Math.min(0, ...vals), hi = Math.max(...vals, 1e-9)
   const t = ticksBonitos(lo, hi * 1.08, 5)
   const y = (v) => m.t + (1 - (v - t.min) / (t.max - t.min)) * (H - m.t - m.b)
@@ -49,7 +48,7 @@ function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
   const corto = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
   const yEje = H - m.b
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="dispersion" role="img" aria-label="Valores de cada grupo" style={{ fontFamily: FUENTE }}>
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="dispersion" role="img" aria-label="Valores de cada grupo" style={{ fontFamily: FUENTE }} onContextMenu={onContext}>
       <rect width={W} height={H} fill="#fff" />
       {t.ticks.map((v) => (
         <g key={v}>
@@ -80,7 +79,7 @@ function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
               </g>
             )}
             {g.det.map((d, k) => (
-              <circle key={k} cx={cx + ((k % 5) - 2) * paso + 0.5 * paso * (Math.floor(k / 5) % 2)} cy={y(d.y)} r="3.8" fill={suave(colorDe(d))} stroke={TEMA.tinta} strokeWidth={TEMA.contorno}
+              <circle key={k} cx={cx + ((k % 5) - 2) * paso + 0.5 * paso * (Math.floor(k / 5) % 2)} cy={y(d.y)} r="3.8" fill={colorDe(d)} stroke={TEMA.tinta} strokeWidth={TEMA.contorno}
                 data-tip={`${g.nombre}\n${d.etq}: ${f(d.y, 4)}`} />
             ))}
             {letras?.[g.nombre] && finito(cima) && <text x={cx} y={Math.max(y(cima) - 8, m.t - 8)} textAnchor="middle" fontSize="13" fontWeight="700" fill={TEMA.tinta}>{letras[g.nombre]}</text>}
@@ -94,7 +93,7 @@ function Dispersion({ grupos, letras, colorDe, unidad, umbrales }) {
       <line x1={m.l} x2={W - m.r} y1={yEje} y2={yEje} stroke={TEMA.tinta} />
     </svg>
   )
-}
+})
 
 // ---------------------------------------------------------------
 // panel izquierdo: los grupos que se comparan
@@ -106,6 +105,9 @@ export function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCt
   const { grupos, r } = foco
   const ctrl = foco.ctrl
   const refFig = useRef(null)
+  const [menu, abrirMenu, cerrarMenu] = useMenuContextual()
+  const [exp, setExp] = useState(false)
+  const fig = (ref, tam, ctx) => <Dispersion ref={ref} tam={tam} onContext={ctx} grupos={grupos} letras={ctrl ? null : r?.ok ? r.letras : null} colorDe={colorDe} unidad={unidad} umbrales={umbrales} />
   const letra = (g) => {
     if (!r?.ok) return '–'
     if (ctrl) {
@@ -125,9 +127,9 @@ export function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCt
       )}
       {grupos.some((g) => g.v.length) ? (
         <>
-          <div className="leyenda-fila"><p className="leyenda-fig"><b>Figura 1.</b> <i>{leyendaNivel(nivelTxt, r)}. Línea: media ± DE.{ctrl ? '' : ' Letras distintas, medias distintas.'}</i></p>
-            <ExportarFig obtener={() => refFig.current?.querySelector('svg')} nombre="grupos" /></div>
-          <div className="figura" ref={refFig}><Dispersion grupos={grupos} letras={ctrl ? null : r?.ok ? r.letras : null} colorDe={colorDe} unidad={unidad} umbrales={umbrales} /></div>
+          <div className="figura">{fig(refFig, undefined, abrirMenu)}</div>
+          <MenuContextual menu={menu} items={[['Guardar imagen…', () => { cerrarMenu(); setExp(true) }]]} />
+          {exp && refFig.current && <ExportDialog nombre="grupos_estadistica" size0={tamDe(refFig.current)} onClose={() => setExp(false)} render={(ref, tam) => fig(ref, tam, (e) => e.preventDefault())} />}
           <div className="tabla-scroll sin-marco">
             <table className="tabla compacta tres-lineas">
               <thead><tr><th>Grupo</th><th className="num">n</th><th className="num">Media</th><th className="num">DE</th><th className="num">CV %</th><th>{ctrl ? 'Contra el control' : 'Letra'}</th></tr></thead>
@@ -136,12 +138,12 @@ export function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCt
                   const mu = g.v.length ? media(g.v) : NaN, sd = g.v.length > 1 ? desvio(g.v) : NaN
                   return (
                     <tr key={i} className={!g.v.length ? 'fuera' : ''}>
-                      <td data-tip={g.v.length ? `${g.nombre}: valores que entran\n${g.det.map((d) => `${d.etq}: ${f(d.y, 4)}`).join('\n')}` : 'Sin datos con esta selección'}><b>{g.nombre}</b></td>
+                      <td data-tip={g.v.length ? `${g.nombre}: valores que entran\n${g.det.map((d) => `${d.etq}: ${f(d.y, 4)}`).join('\n')}` : 'Sin datos con esta selección'}>{g.nombre}</td>
                       <td className="num">{g.v.length}</td>
                       <td className="num">{f(mu, 3)}</td>
                       <td className="num">{f(sd, 3)}</td>
                       <td className="num">{finito(sd) && mu ? f((100 * sd) / Math.abs(mu), 1) : '–'}</td>
-                      <td><b>{letra(g)}</b></td>
+                      <td className="letra-grupo">{letra(g)}</td>
                     </tr>
                   )
                 })}
@@ -161,6 +163,13 @@ export function PanelGrupos({ foco, unidad, nivelTxt, colorDe, fuera, comp, onCt
 // ---------------------------------------------------------------
 // panel derecho: el resultado de la prueba
 // ---------------------------------------------------------------
+// resumen en una línea: cuántos pares difieren (el detalle está en la tabla de pares)
+function lecturaCorta(r, ctrl) {
+  const n = r.pares.length, d = r.pares.filter((p) => finito(p.pa) && p.pa < 0.05).length
+  if (r.global.p >= 0.05 || !n || !d || n <= 3) return lecturaDe(r, ctrl)
+  return `${d} de ${n} ${ctrl ? 'comparaciones contra el control' : 'pares'} difieren; el detalle está en la tabla de abajo.`
+}
+
 export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
   const refPares = useRef(null), refGlobal = useRef(null)   // antes de cualquier return (regla de los hooks)
   const { r, ctrl } = foco
@@ -170,7 +179,7 @@ export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
   const dunnett = r.pares[0]?.metodo === 'Dunnett'
   const hip = hipotesisGrupos(r.tipo, foco.sujeto, foco.factor, r.grupos, ctrl, dunnett)
   const sw = r.sw, lev = r.lev
-  const leyPares = `Tabla 1. ${ctrl ? 'Cada grupo contra el control' : 'Diferencia de medias de cada par'}; p ajustado por ${r.pares[0]?.metodo || 'Holm'}.`
+  const leyPares = `${ctrl ? 'Cada grupo contra el control' : 'Comparaciones de a pares'} (p ajustado por ${r.pares[0]?.metodo || 'Holm'})`
   return (
     <section className="tarjeta panel-est">
       <div className="cabeza-tarjeta"><span className="etiqueta-seccion">Resultado de la estadística</span><span className="ayuda">α = 0,05</span></div>
@@ -180,7 +189,7 @@ export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
         <b>{sig ? 'Hay diferencias' : 'No hay diferencia clara'}</b>
         <span>{NOMBRE_TEST[r.tipo]} · {r.global.est} = {f(r.global.valor, 3)}{r.global.df2 ? ` (${r.global.df1}; ${f(r.global.df2, 1)} gl)` : ` (${r.global.df1} gl)`} · p = {pTxt(p)} {sig ? marcaSig(p) : ''}</span>
       </div>
-      <p className="lectura">{lecturaDe(r, ctrl)}</p>
+      <p className="lectura">{lecturaCorta(r, ctrl)}</p>
       <details className="plegable"><summary>Hipótesis</summary><Hip titulo="Hipótesis" items={hip.slice(0, 1)} /></details>
 
       <h4>Cómo se eligió la prueba</h4>
@@ -198,8 +207,7 @@ export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
 
       {r.pares.length > 0 && (
         <>
-          <h4>{ctrl ? `Cada grupo contra «${ctrl}»` : 'Comparaciones de a pares'}</h4>
-          <div className="leyenda-fila"><p className="leyenda-fig"><b>Tabla 1.</b> <i>{ctrl ? 'Cada grupo contra el control' : 'Diferencia de medias de cada par'}; p ajustado por {r.pares[0]?.metodo || 'Holm'}.</i></p>
+          <div className="leyenda-fila"><h4>{ctrl ? `Cada grupo contra «${ctrl}»` : 'Comparaciones de a pares'} <small className="ayuda">p ajustado por {r.pares[0]?.metodo || 'Holm'}</small></h4>
             <ExportarFig tipo="tabla" titulo={leyPares} obtener={() => refPares.current?.querySelector('table')} /></div>
           <div className="tabla-scroll sin-marco" ref={refPares}>
             <table className="tabla compacta tres-lineas">
@@ -222,8 +230,7 @@ export function PanelResultado({ foco, alDesarrollo, extra, contexto }) {
 
       <details className="plegable">
         <summary>Tabla de la prueba global{r.tipo === 'anova' || r.tipo === 'bloques' ? ' (ANOVA)' : ''}</summary>
-        <div className="leyenda-fila"><p className="leyenda-fig"><b>Tabla 2.</b> <i>{r.global.nombre}.</i></p>
-          <ExportarFig tipo="tabla" titulo={`Tabla 2. ${r.global.nombre}.`} obtener={() => { const t = refGlobal.current?.querySelectorAll('table'); return t?.[t.length - 1] }} /></div>
+        <div className="leyenda-fila leyenda-sola"><ExportarFig tipo="tabla" titulo={r.global.nombre} obtener={() => { const t = refGlobal.current?.querySelectorAll('table'); return t?.[t.length - 1] }} /></div>
         <div ref={refGlobal}>
         <Tabla cols={['Prueba', 'Estadístico', 'gl', 'p']} filas={[[r.global.nombre, `${r.global.est} = ${f(r.global.valor, 3)}`, r.global.df2 ? `${r.global.df1}; ${f(r.global.df2, 2)}` : r.global.df1, pTxt(p)]]} />
         {r.global.filas && <Tabla cols={['Fuente', 'Suma de cuadrados', 'gl', 'Cuadrado medio', 'F', 'p']} filas={r.global.filas.map((x) => [x[0], f(x[1], 6), x[2], finito(x[3]) ? f(x[3], 6) : '', finito(x[4]) ? f(x[4], 3) : '', finito(x[5]) ? pTxt(x[5]) : ''])} />}

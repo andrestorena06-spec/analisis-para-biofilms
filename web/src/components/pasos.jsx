@@ -92,7 +92,7 @@ export function PasoAPaso({ s }) {
         porque={<>Un pocillo sin bacterias igual absorbe algo de luz: el plástico, el medio y un poco de cristal violeta que queda pegado. <b>Se promedian los blancos</b> para saber cuánto vale «nada» y no confundirlo con biofilm.</>}>
         {bl.length > 1 ? (
           <>
-            <Tabla leyenda={<><b>Tabla 1.</b> <i>Blancos aceptados de la placa activa. La última columna mide qué tan lejos cae cada uno de la media.</i></>}
+            <Tabla leyenda={<>Blancos aceptados de la placa activa. La última columna mide qué tan lejos cae cada uno de la media.</>}
               cols={['Pocillo', 'OD', 'OD − x̄', '(OD − x̄)²']}
               filas={bl.map((e) => [e.Pocillo, f(e.OD), f(e.OD - eb.m), f((e.OD - eb.m) ** 2, 6)])}
               pie={[['Suma', f(eb.ss, 6)]]} />
@@ -113,7 +113,7 @@ export function PasoAPaso({ s }) {
         <>
           <Paso n={3} icono="replicas" titulo={`El valor de «${muestra}»`}
             porque={<>Cada muestra va en varios pocillos (réplicas) y ninguno da exactamente igual. <b>La media la resume en un número</b>; el desvío dice cuánto se separan las réplicas de esa media.{resta ? <> Con «Restar blanco», a cada pocillo se le resta antes la media de los blancos ({f(resta)}).</> : null}</>}>
-            <Tabla leyenda={<><b>Tabla 2.</b> <i>Réplicas aceptadas de «{muestra}»{resta ? ', en OD corregida' : ''}.</i></>}
+            <Tabla leyenda={<>Réplicas aceptadas de «{muestra}»{resta ? ', en OD corregida' : ''}.</>}
               cols={[...(resta ? ['Pocillo', 'Réplica', 'OD leída', 'OD corregida'] : ['Pocillo', 'Réplica', 'OD']), 'OD − x̄', '(OD − x̄)²']}
               filas={reps.map((e) => [e.Pocillo, e.Replica, ...(resta ? [f(leida(e))] : []), f(e.OD), f(e.OD - es.m), f((e.OD - es.m) ** 2, 6)])}
               pie={[['Suma', f(es.ss, 6)]]} />
@@ -134,7 +134,7 @@ export function PasoAPaso({ s }) {
           {Number.isFinite(odc) && (
             <Paso n={nClase} icono="etiqueta" titulo="La clase"
               porque={<>La OD sola depende del día de tinción. <b>Comparada con el ODc de su misma placa</b> se vuelve comparable entre días (criterio de Stepanović).{resta ? ' La clase se decide con la OD leída.' : ''}</>}>
-              <Tabla leyenda={<><b>Tabla 3.</b> <i>Límites de cada clase en esta placa; resaltada, la que corresponde a «{muestra}».</i></>}
+              <Tabla leyenda={<>Límites de cada clase en esta placa; resaltada, la que corresponde a «{muestra}».</>}
                 cols={['Clase', 'Condición', 'Límite']} marcar={claseIdx}
                 filas={[['No productor', 'OD ≤ ODc', f(odc)], ['Productor débil', 'ODc < OD ≤ 2 ODc', f(2 * odc)], ['Productor moderado', '2 ODc < OD ≤ 4 ODc', f(4 * odc)], ['Productor fuerte', 'OD > 4 ODc', f(4 * odc)]]
                   .map(([c, ...r]) => [<span key={c}><i className="punto" style={{ background: COLOR_CLASE[c] }} />{c}</span>, ...r])} />
@@ -149,7 +149,7 @@ export function PasoAPaso({ s }) {
                 : <><b>Si el CV supera {cvMax} %</b>, el pocillo más alejado de la media queda como sospechoso.</>}{resta ? ' Se hace con la OD leída.' : ''}</>}>
             {orden.length >= 3 ? (
               <>
-                <Tabla leyenda={<><b>Tabla 4.</b> <i>Réplicas de «{muestra}» ordenadas de menor a mayor.</i></>}
+                <Tabla leyenda={<>Réplicas de «{muestra}» ordenadas de menor a mayor.</>}
                   cols={['Orden', 'Pocillo', 'OD', 'Hasta el siguiente', det.metodo === 'q' ? 'Distancia / rango' : '|OD − x̄|']}
                   filas={orden.map((r, i) => [i + 1, r.e.Pocillo, f(r.v), i < orden.length - 1 ? f(orden[i + 1].v - r.v) : '–',
                     det.metodo === 'q' ? (i === 0 ? f((orden[1].v - r.v) / rango, 3) : i === orden.length - 1 ? f((r.v - orden[i - 1].v) / rango, 3) : '–') : f(Math.abs(r.v - media(x)))])}

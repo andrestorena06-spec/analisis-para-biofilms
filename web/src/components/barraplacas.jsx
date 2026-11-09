@@ -1,12 +1,12 @@
 // Barra de placas: elegir la placa activa, ordenarlas arrastrando y agregar más
 import { useEffect, useRef, useState } from 'react'
 import { Icono } from './iconos.jsx'
-import { fmt, paletaMuestras } from '../utils.js'
+import { fmt, paletaPlacas } from '../utils.js'
 
 export function BarraPlacas({ exp, placas, activa, analisisMap, setActivaId, setOpts, reordenarPlacas, setRenombrar, setMenuPlaca, abrirMenu, inputPlacas }) {
   const arrastrada = useRef(null)
   const [arrastrandoSobre, setArrastrandoSobre] = useState(null)
-  const colores = paletaMuestras(placas.map((p) => p.id))
+  const colores = paletaPlacas(placas).placa
   // la barra es de una sola fila: la placa elegida siempre queda a la vista
   useEffect(() => { document.querySelector('.chip-placa.activa')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }, [activa?.id])
   return (

@@ -1,6 +1,6 @@
 import { resumenBlancos } from './blancos.js'
 import { resumenGrupo } from './estadistica.js'
-import { ESCALAS, dec, paletaMuestras } from './utils.js'
+import { ESCALAS, dec, paletaMuestras, paletaPlacas } from './utils.js'
 import { seroDe, serotiposDe } from './serotipos.js'
 
 // aclara un color hsl(h, s%, l%) (f de 0 a 1): los tonos de una familia, uno por placa
@@ -46,13 +46,14 @@ export function armarComparacion(s) {
   const ordenMedios = [...new Set(s.placas.map((p) => p.medio || ''))].filter(Boolean)
   const placasSel = [...sel0].sort((a, b) => (a.medio ? ordenMedios.indexOf(a.medio) : 999) - (b.medio ? ordenMedios.indexOf(b.medio) : 999))
   const mediosPres = [...new Set(placasSel.map((p) => p.medio).filter(Boolean))]
-  const coloresMedio = paletaMuestras(mediosPres)
-  const colorBase = paletaMuestras(s.placas.map((p) => p.id))
+  const PP = paletaPlacas(s.placas)
+  const coloresMedio = Object.fromEntries(mediosPres.map((m) => [m, PP.medio[m]]))
+  const colorBase = PP.placa
   // color de cada placa: familia de tonos del medio si lo tiene; si no, un color propio
   const colores = {}
   mediosPres.forEach((md) => {
     const ps = placasSel.filter((p) => p.medio === md)
-    ps.forEach((p, i) => { colores[p.id] = aclarar(coloresMedio[md], ps.length > 1 ? (0.5 * i) / (ps.length - 1) : 0) })
+    ps.forEach((p) => { colores[p.id] = PP.placa[p.id] })
   })
   placasSel.forEach((p) => { if (!colores[p.id]) colores[p.id] = colorBase[p.id] })
 

@@ -35,7 +35,7 @@ export function BloqueConTusDatos({ grupos, nombrePlaca, unidad }) {
 
       <Paso n={1} icono="placas" titulo="Cada placa tiene su propio nivel"
         porque={<>Cada placa se tiñe en un día distinto: si ese día la tinción salió más fuerte, sube a todos los grupos de esa placa. <b>Primero se mide cuánto se aparta cada placa</b> del promedio general: ese es su efecto.</>}>
-        <Tabla leyenda={<><b>Tabla B1.</b> <i>Un valor por placa y grupo. Efecto de la placa = promedio de la placa − promedio general.</i></>}
+        <Tabla leyenda={<>Un valor por placa y grupo. Efecto de la placa = promedio de la placa − promedio general.</>}
           cols={['Placa', ...nom, 'Promedio', 'Efecto']}
           filas={[...T.Y.map((fila, i) => [nombrePlaca(T.bloques[i]), ...fila.map((y) => f(y, 3)), f(A.mb[i], 3), s(ef[i], 3)]),
             ['Promedio', ...A.mg.map((m) => f(m, 3)), f(A.G, 3), '']]} />
@@ -44,7 +44,7 @@ export function BloqueConTusDatos({ grupos, nombrePlaca, unidad }) {
 
       <Paso n={2} icono="filtro" titulo="Se resta el efecto de la placa"
         porque={<>A cada valor se le resta el efecto de su placa. <b>Los grupos conservan su orden, pero las réplicas se acercan entre sí</b>: lo que se saca es la variación del día, no la diferencia entre grupos.</>}>
-        <Tabla leyenda={<><b>Tabla B2.</b> <i>Valores sin el efecto de la placa (valor − efecto). Los promedios de cada grupo no cambian.</i></>}
+        <Tabla leyenda={<>Valores sin el efecto de la placa (valor − efecto). Los promedios de cada grupo no cambian.</>}
           cols={['Placa', ...nom]}
           filas={Yc.map((fila, i) => [nombrePlaca(T.bloques[i]), ...fila.map((y) => f(y, 3))])} />
         <Cuenta izq={`${nom[0]} en ${placa0}`} pasos={[`${f(T.Y[0][0], 4)} − (${s(ef[0])})`]} res={f(Yc[0][0])} />
@@ -56,11 +56,11 @@ export function BloqueConTusDatos({ grupos, nombrePlaca, unidad }) {
         <Cuenta izq="SC grupos" pasos={[`${b} placas × Σ (promedio del grupo − promedio general)²`]} res={f(A.ssg, 5)} />
         <Cuenta izq="SC placas" pasos={[`${k} grupos × Σ (efecto de la placa)²`]} res={f(A.ssb, 5)} />
         <Cuenta izq="SC error" pasos={['SC total − SC grupos − SC placas', `${f(A.sst, 5)} − ${f(A.ssg, 5)} − ${f(A.ssb, 5)}`]} res={f(A.sse, 5)} />
-        <Tabla leyenda={<><b>Tabla B3.</b> <i>ANOVA con la placa como bloque. CM = SC / gl; F = CM / CM del error.</i></>}
+        <Tabla leyenda={<>ANOVA con la placa como bloque. CM = SC / gl; F = CM / CM del error.</>}
           cols={['Fuente', 'SC', 'gl', 'CM', 'F', 'p']}
           filas={[['Grupos', f(A.ssg, 5), A.dfg, f(A.ssg / A.dfg, 5), f(A.Fg, 2), pTxt(A.pg)], ['Placas (bloque)', f(A.ssb, 5), A.dfb, f(A.ssb / A.dfb, 5), f(A.Fb, 2), pTxt(A.pb)], ['Error', f(A.sse, 5), A.dfe, f(A.mse, 5), '', '']]}
           pie={[['Total (SC)', f(A.sst, 5)]]} />
-        <Tabla leyenda={<><b>Tabla B4.</b> <i>Lo que cambia al sacar las placas del error ({f(A.pctBloque, 0)} % de la variación total era de las placas).</i></>}
+        <Tabla leyenda={<>Lo que cambia al sacar las placas del error ({f(A.pctBloque, 0)} % de la variación total era de las placas).</>}
           cols={['', 'CM del error (ruido)', 'F de los grupos', 'p']}
           filas={[['Sin bloque', `${f(cmSin, 5)} (gl ${dfSin})`, f(Fsin, 2), pTxt(pSin)], ['Con la placa como bloque', `${f(A.mse, 5)} (gl ${A.dfe})`, f(A.Fg, 2), pTxt(A.pg)]]} marcar={1} />
       </Paso>

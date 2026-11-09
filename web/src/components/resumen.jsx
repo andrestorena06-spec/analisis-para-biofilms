@@ -5,7 +5,7 @@ import { BotonCinta, Cinta, Grupo, Mosaico } from './cinta.jsx'
 import { pendientes, TITULO_PASO } from '../progreso.js'
 import { excelDe } from '../api.js'
 import { abrirInforme } from './informe.jsx'
-import { COLOR_CLASE, descargarBlob, fmt, paletaMuestras } from '../utils.js'
+import { COLOR_CLASE, descargarBlob, fmt, paletaMuestras, paletaPlacas } from '../utils.js'
 import { nombreArchivo } from '../modelo.js'
 import { seroDe } from '../serotipos.js'
 
@@ -74,7 +74,7 @@ export function Resumen({ s }) {
   const conAn = vis.filter((p) => analisisMap[p.id]?.resumen?.length)
   const cepas = exp.muestras.filter((m) => conAn.some((p) => analisisMap[p.id].resumen.some((r) => r.Muestra === m)))
   const colorCepa = paletaMuestras(exp.muestras)
-  const colorPlaca = paletaMuestras(exp.placas.map((p) => p.id))
+  const colorPlaca = paletaPlacas(exp.placas).placa
   const ondas = [...new Set(vis.map((p) => p.placa?.onda).filter(finito))]
   const ficha = [
     ['Fecha', i.fecha], ['Organismo', i.organismo], ['Tinción', i.tincion], ['Incubación', [i.incubacion, finito(Number(String(i.temperatura).replace(',', '.'))) && i.temperatura !== '' ? `${i.temperatura} °C` : ''].filter(Boolean).join(' · ')],
