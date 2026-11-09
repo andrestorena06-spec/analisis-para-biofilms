@@ -77,13 +77,13 @@ export const fmt = (x, d = 3) => (Number.isFinite(x) ? dec(x, d) : 'NA')
 const SUB = '₀₁₂₃₄₅₆₇₈₉'
 export const sub = (n) => String(n).replace(/\d/g, (d) => SUB[Number(d)])
 
-// Colores por muestra (equivalente a scales::hue_pal)
+// Colores por muestra: tonos repartidos en el círculo (como scales::hue_pal), apagados para combinar con las clases
 export function paletaMuestras(muestras) {
   const n = muestras.length
   const out = {}
   muestras.forEach((m, i) => {
     const h = (15 + (360 * i) / Math.max(n, 1)) % 360
-    out[m] = `hsl(${h.toFixed(0)}, 62%, 52%)`
+    out[m] = `hsl(${h.toFixed(0)}, 36%, 56%)`
   })
   return out
 }
@@ -152,6 +152,32 @@ export function aCSV(filas, columnas) {
     return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
   }
   return [columnas.join(','), ...filas.map((f) => columnas.map((c) => esc(f[c])).join(','))].join('\n')
+}
+
+// <svg> → PNG (Blob) con fondo blanco
+export function svgAPNG(svg, escala = 3) {
+  const clon = svg.cloneNode(true)
+  const w = svg.viewBox.baseVal.width || svg.clientWidth
+  const h = svg.viewBox.baseVal.height || svg.clientHeight
+  clon.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clon.setAttribute('width', w)
+  clon.setAttribute('height', h)
+  const xml = new XMLSerializer().serializeToString(clon)
+  return new Promise((ok, mal) => {
+    const img = new Image()
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = w * escala
+      c.height = h * escala
+      const g = c.getContext('2d')
+      g.fillStyle = '#ffffff'
+      g.fillRect(0, 0, c.width, c.height)
+      g.drawImage(img, 0, 0, c.width, c.height)
+      c.toBlob((b) => (b ? ok(b) : mal(new Error('png'))), 'image/png')
+    }
+    img.onerror = mal
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)
+  })
 }
 
 // Convierte un <svg> en PNG y lo descarga

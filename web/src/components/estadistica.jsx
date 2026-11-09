@@ -206,7 +206,7 @@ export function EstadisticaTab({ s: s0 }) {
   )
 
   // ---- fichas de selección ----
-  const fichaPlaca = (p) => ({ id: p.id, texto: p.nombre, sub: p.medio, color: D.colores[p.id] || D.colorBase[p.id], tip: `${p.nombre}${p.medio ? ` · ${p.medio}` : ''}\nClic para ${fueraPl.includes(p.id) ? 'incluirla' : 'sacarla'} de la prueba` })
+  const fichaPlaca = (p) => ({ id: p.id, texto: p.nombre, color: D.colores[p.id] || D.colorBase[p.id], tip: `${p.nombre}${p.medio ? ` · ${p.medio}` : ''}\nClic para ${fueraPl.includes(p.id) ? 'incluirla' : 'sacarla'} de la prueba` })
   const alternarPlaca = (id) => setO('ePlacasFuera', fueraPl.includes(id) ? fueraPl.filter((x) => x !== id) : [...fueraPl, id])
   const alternar = (k, lista) => (id) => setO(k, (o[k] || []).includes(id) ? (o[k] || []).filter((x) => x !== id) : [...(o[k] || []), id])
   const alcance = (todosTxt) => [...X.medios.map((m) => ({ id: m, texto: m, tip: `Solo las placas de ${m}` })), { id: '__todos', texto: todosTxt, tip: 'Las placas de todos los medios juntas' }]
