@@ -1,3 +1,4 @@
+import { TEMA } from '../tema.js'
 import { forwardRef } from 'react'
 import { dBigotes, dCaja, dError, dGrupo, dMediana } from '../calculos.js'
 import { anchoContenido, partirNota, calcularLayout } from '../layout.js'
@@ -95,11 +96,11 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
         <rect width={W} height={L.H} fill="#fff" />
         <Titulo W={W} est={est} />
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
-        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke="#444" />
-        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke="#444" />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke={TEMA.tinta} />
+        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke={TEMA.tinta} />
         {eY.min < 0 && <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke="#888" strokeDasharray="3 3" />}
         {clases && ESCALAS[escala].umbrales.map(([u, nom], i) => u >= eY.min && u <= eY.max && (
-          <line key={u} x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#333" strokeDasharray="2 3"
+          <line key={u} x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke={TEMA.umbral} strokeDasharray="5 3"
             data-tip={`${u} = ${nom} de cada placa\nlímite entre «${CL[3 - i][0]}» y «${CL[2 - i][0]}»`} />
         ))}
 
@@ -108,7 +109,6 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
           const nom = g.etiqueta || g.muestra
           return (
             <g key={g.muestra}>
-              {gi % 2 === 1 && <rect x={cx(gi) - L.band / 2} y={L.top} width={L.band} height={L.plotH} fill="#f6f1e8" fillOpacity="0.6" />}
               {g.barras.map((b, k) => {
                 const mx = x0 + k * sw + sw / 2
                 const n = b.pts.length
@@ -122,19 +122,19 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
                 return (
                   <g key={b.id}>
                     {o.barras && (
-                      <rect x={mx - bw / 2} y={y(Math.max(b.media, 0))} width={bw} height={Math.max(Math.abs(y(0) - y(b.media)), 0.5)} rx="2"
-                        fill={b.color} fillOpacity={o.caja ? 0.3 : 0.92} stroke={b.color} strokeWidth="1"
+                      <rect x={mx - bw / 2} y={y(Math.max(b.media, 0))} width={bw} height={Math.max(Math.abs(y(0) - y(b.media)), 0.5)}
+                        fill={b.color} fillOpacity={o.caja ? 0.3 : 0.92} stroke={TEMA.tinta} strokeWidth={TEMA.contorno}
                         data-tip={tipColumna(b, cab)} />
                     )}
                     {o.barras && o.barrasError && conErr(b) && (
-                      <g stroke="#222" strokeWidth="1.4" data-tip={`${cab}\nBarra de error: ± ${V(b.err)} (${errNom})\n${o.errorTipo ? dError(o.errorTipo, b.vp || b.pts) : ''}${o.errorTipo === 'ic95' ? '' : `\nva de ${V(b.media - b.err)} a ${V(b.media + b.err)}`}`}>
+                      <g stroke={TEMA.tinta} strokeWidth="1.4" data-tip={`${cab}\nBarra de error: ± ${V(b.err)} (${errNom})\n${o.errorTipo ? dError(o.errorTipo, b.vp || b.pts) : ''}${o.errorTipo === 'ic95' ? '' : `\nva de ${V(b.media - b.err)} a ${V(b.media + b.err)}`}`}>
                         <line x1={mx} x2={mx} y1={y(Math.max(b.media - b.err, eY.min))} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.2} x2={mx + bw * 0.2} y1={y(b.media + b.err)} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.2} x2={mx + bw * 0.2} y1={y(Math.max(b.media - b.err, eY.min))} y2={y(Math.max(b.media - b.err, eY.min))} />
                       </g>
                     )}
                     {o.bigotes && n >= 5 && (
-                      <g stroke="#444" strokeWidth="1.2" data-tip={`${cab}\n${dBigotes(b.pts)}`}>
+                      <g stroke={TEMA.tinta} strokeWidth="1.2" data-tip={`${cab}\n${dBigotes(b.pts)}`}>
                         <line x1={mx} x2={mx} y1={y(mn)} y2={y(mxv)} />
                         <line x1={mx - bw * 0.16} x2={mx + bw * 0.16} y1={y(mn)} y2={y(mn)} />
                         <line x1={mx - bw * 0.16} x2={mx + bw * 0.16} y1={y(mxv)} y2={y(mxv)} />
@@ -145,15 +145,15 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
                         data-tip={`${cab}\n${dCaja(b.pts)}`} />
                     )}
                     {o.mediana && n >= 3 && (
-                      <line x1={mx - bw * 0.3} x2={mx + bw * 0.3} y1={y(md)} y2={y(md)} stroke="#222" strokeWidth="2.4"
+                      <line x1={mx - bw * 0.3} x2={mx + bw * 0.3} y1={y(md)} y2={y(md)} stroke={TEMA.tinta} strokeWidth="2.4"
                         data-tip={`${cab}\n${dMediana(b.pts)}`} />
                     )}
                     {o.media && (
-                      <path d={`M${mx - 5},${y(b.media)} L${mx},${y(b.media) - 5} L${mx + 5},${y(b.media)} L${mx},${y(b.media) + 5} Z`} fill="#fff" stroke="#222" strokeWidth="1.2" data-tip={tipColumna(b, cab)} />
+                      <circle cx={mx} cy={y(b.media)} r="3.4" fill="#fff" stroke={TEMA.tinta} strokeWidth="1.2" data-tip={tipColumna(b, cab)} />
                     )}
                     {o.puntos && puntos.map((p, j) => (
                       <circle key={j} cx={mx + (puntos.length > 1 ? (((j * 0.6180339) % 1) - 0.5) * Math.max(bw, 32) * 0.56 : 0)} cy={y(p.v)} r="3.6"
-                        fill={p.color} fillOpacity="0.92" stroke="#fff" strokeWidth="1" data-tip={p.tip || `${b.placa}\n${unidad} = ${V(p.v)}`} />
+                        fill={p.color} fillOpacity="0.92" stroke={TEMA.tinta} strokeWidth={TEMA.contorno} data-tip={p.tip || `${b.placa}\n${unidad} = ${V(p.v)}`} />
                     ))}
                     {o.valores && Number.isFinite(arriba) && (
                       <EtiquetaFondo x={mx} y={y(arriba) - 8} est={est.valores}
@@ -168,7 +168,7 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
 
         {clases && CL.map((c, i) => c[1] >= eY.min && c[1] <= eY.max && (
           <g key={c[0]}>
-            <line x1={L.left + L.plotW} x2={L.left + L.plotW + 8} y1={ysC[i]} y2={posC[i]} stroke="#999" />
+            <line x1={L.left + L.plotW} x2={L.left + L.plotW + 8} y1={ysC[i]} y2={posC[i]} stroke={TEMA.umbral} />
             <EtiquetaFondo x={L.left + L.plotW + 12} y={posC[i] + (textosC[i].split('\n').length === 2 ? hLin * 0.1 : hLin * 0.35)}
               texto={textosC[i]} est={estC} anchor="start" pad={1} />
           </g>
@@ -209,8 +209,8 @@ export const CompararChart = forwardRef(function CompararChart({ grupos, leyenda
               {f.map((it) => {
                 const gg = (
                   <g key={it.id} transform={`translate(${x},0)`}>
-                    <rect width="14" height="14" y="-11" rx="3" fill={it.color} stroke="#333" strokeWidth="0.5" />
-                    <text x="20" style={{ fontSize: 12, fill: '#333' }}>{it.nombre}</text>
+                    <rect width="14" height="14" y="-11" fill={it.color} stroke={TEMA.tinta} strokeWidth={TEMA.contorno} />
+                    <text x="20" style={{ fontSize: 12, fill: TEMA.texto }}>{it.nombre}</text>
                   </g>
                 )
                 x += it.w

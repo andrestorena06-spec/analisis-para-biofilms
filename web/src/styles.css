@@ -576,7 +576,7 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
 .fila-control select { width: auto !important; }
 .dispersion { width: 100%; height: auto; display: block; }
 .nota-panel { margin: 8px 0 0; font-size: var(--t-sm); }
-.veredicto { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; border-left: 4px solid; margin-bottom: 8px; }
+.veredicto { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 2px; align-items: center; padding: 12px 14px; border-radius: 10px; border-left: 4px solid; margin-bottom: 8px; }
 .veredicto b { font-size: var(--t-xl); }
 .veredicto span { font-size: var(--t-sm); color: var(--sec); font-variant-numeric: tabular-nums; }
 .veredicto.dif { background: var(--aviso-suave); border-color: var(--aviso); }
@@ -711,3 +711,40 @@ tr.placa-oculta > td:not(:last-child) { opacity: .55; }
 .marca-sosp, .marca-excl { display: inline-grid; place-items: center; min-width: 17px; height: 17px; border-radius: 99px; font-style: normal; font-size: var(--t-xs); font-weight: 600; color: #fff; }
 .marca-sosp { background: #d97f1e; }
 .marca-excl { background: #c0392b; }
+
+/* ---------- Tema de publicación: tablas de resultados de tres líneas y leyendas de figuras ---------- */
+.veredicto > b, .veredicto > span { grid-column: 2; }
+.veredicto-ico { grid-row: 1 / span 2; width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.veredicto.dif .veredicto-ico { color: var(--aviso); }
+.veredicto.ok .veredicto-ico { color: var(--ok); }
+.tabla-scroll.sin-marco { border: 0; border-radius: 0; background: transparent; }
+table.tres-lineas { border-collapse: collapse; border-top: 1.5px solid var(--texto); border-bottom: 1.5px solid var(--texto); font-variant-numeric: tabular-nums; }
+.tres-lineas th { position: sticky; top: 0; background: var(--panel); color: var(--texto); border-bottom: .8px solid var(--texto); font-weight: 600; }
+.tres-lineas td { border-bottom: 0; }
+.tres-lineas tbody tr:nth-child(even) td { background: transparent; }
+.tres-lineas tbody tr:hover td { background: var(--hover); }
+.tres-lineas tfoot th, .tres-lineas tfoot td { background: transparent; border-top: .8px solid var(--texto); color: var(--texto); font-weight: 600; }
+.tres-lineas tr.par-igual td { color: var(--tenue); }
+.leyenda-fig { font-family: 'IBM Plex Serif', Georgia, serif; font-size: var(--t-sm); line-height: 1.45; margin: 10px 0 4px; color: var(--texto); max-width: 80ch; }
+.leyenda-fig b { font-weight: 500; }
+.leyenda-fig i { color: var(--sec); }
+.matriz-p { border-spacing: 1px; }
+.matriz-p td { border-radius: 0; min-width: 40px; height: 30px; }
+
+/* ---------- Métodos: cálculo paso a paso ---------- */
+.paso-mt { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 18px 0; border-top: 1px solid var(--borde); }
+.paso-mt:first-of-type { border-top: 0; }
+.paso-ico { position: relative; width: 44px; height: 44px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--borde); color: var(--acento-fuerte); display: grid; place-items: center; }
+.paso-ico em { position: absolute; top: -7px; left: -7px; width: 20px; height: 20px; border-radius: 50%; background: var(--acento-fuerte); color: var(--sobre-acento); font-style: normal; font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+.metodo .paso-mt h3 { margin: 2px 0 6px; padding: 0; border: 0; font-size: var(--t-lg); }
+.paso-porque { max-width: 72ch; color: var(--sec); margin: 0 0 6px; }
+.paso-porque b { color: var(--texto); }
+.cuenta { font-family: 'IBM Plex Serif', Georgia, serif; font-size: 14.5px; font-variant-numeric: tabular-nums; margin: 6px 0; padding: 4px 0 4px 12px; border-left: 2px solid var(--borde2); overflow-x: auto; white-space: nowrap; }
+.cuenta b { color: var(--acento-fuerte); }
+.tres-lineas tr.marcada td { background: var(--acento-suave); font-weight: 600; }
+.decision { font-weight: 600; margin: 6px 0; }
+.decision.dif { color: var(--aviso); }
+.decision.ok { color: var(--ok); }
+.bloque-pasos { margin: 8px 0 18px; padding: 4px 16px; border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); }
+.paso-tabla.tres-lineas { width: auto; min-width: min(100%, 420px); }
+.paso-tabla.tres-lineas td, .paso-tabla.tres-lineas th { padding-left: 14px; padding-right: 14px; }

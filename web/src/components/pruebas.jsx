@@ -7,7 +7,7 @@ import { desvio, marcaSig, media } from '../estadistica.js'
 const finito = Number.isFinite
 export const f = (x, d = 3) => (finito(x) ? x.toFixed(d).replace('.', ',') : x === Infinity ? '∞' : '–')
 export const pTxt = (p) => (!finito(p) ? '–' : p < 0.0001 ? '< 0,0001' : p.toFixed(4).replace('.', ','))
-export const NOMBRE_TEST = { anova: 'ANOVA', welch: 'ANOVA de Welch', kw: 'Kruskal-Wallis', bloques: 'ANOVA en bloques', friedman: 'Friedman' }
+export const NOMBRE_TEST = { anova: 'ANOVA', welch: 'ANOVA de Welch', kw: 'Kruskal-Wallis', bloques: 'ANOVA de dos factores (grupo + placa)', friedman: 'Friedman' }
 
 // ---------------------------------------------------------------
 // Objetivos (qué se quiere evaluar)
@@ -70,8 +70,8 @@ export function Chip({ tipo, children, tip }) {
 // ---------------------------------------------------------------
 export function Tabla({ cols, filas }) {
   return (
-    <div className="tabla-scroll chica">
-      <table className="tabla paso-tabla">
+    <div className="tabla-scroll chica sin-marco">
+      <table className="tabla paso-tabla tres-lineas">
         <thead><tr>{cols.map((c) => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>{filas.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j}>{v}</td>)}</tr>)}</tbody>
       </table>
@@ -86,15 +86,14 @@ export function MatrizP({ r }) {
   const busca = (a, b) => r.pares.find((p) => (p.a === a && p.b === b) || (p.a === b && p.b === a))
   const clase = (p) => (!finito(p) ? 'p-na' : p < 0.001 ? 'p-3' : p < 0.01 ? 'p-2' : p < 0.05 ? 'p-1' : 'p-0')
   return (
-    <div className="tabla-scroll chica">
+    <div className="tabla-scroll chica sin-marco">
       <table className="matriz-p">
-        <thead><tr><th />{nombres.map((n, i) => <th key={i}>{n}</th>)}</tr></thead>
+        <thead><tr><th />{nombres.slice(0, -1).map((n, i) => <th key={i}>{n}</th>)}</tr></thead>
         <tbody>
-          {nombres.map((a, ia) => (
-            <tr key={ia}>
+          {nombres.slice(1).map((a, i) => (
+            <tr key={i}>
               <th>{a}</th>
-              {nombres.map((b, ib) => {
-                if (ia === ib) return <td key={ib} className="p-diag" />
+              {nombres.slice(0, i + 1).map((b, ib) => {
                 const p = busca(a, b)
                 return <td key={ib} className={p ? clase(p.pa) : 'p-na'} data-tip={p ? `${a} vs ${b}\ndiferencia = ${f(a === p.a ? p.dif : -p.dif, 4)}\np ajustado (${p.metodo || 'Holm'}) = ${pTxt(p.pa)}` : 'sin comparación'}>{p ? marcaSig(p.pa) : ''}</td>
               })}

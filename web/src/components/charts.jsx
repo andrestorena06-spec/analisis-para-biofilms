@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { dBarra, dError, dGrupo } from '../calculos.js'
 import { anchoContenido, calcularLayout, estiloTexto, partirNota } from '../layout.js'
+import { TEMA } from '../tema.js'
 import { CLASES, COLOR_CLASE, ESCALAS, FUENTE, estiloEscala, ejeConRango, escalaValida, escalaY, fEscala, fmt, fmtTick, ic95, medir, ticksBonitos } from '../utils.js'
 
 export function useAncho() {
@@ -38,7 +39,8 @@ export function EjeY({ ticks, paso, y, left, plotW, est, titulo }) {
     <g>
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={left} x2={left + plotW} y1={y(t)} y2={y(t)} stroke="#e6eaef" />
+          <line x1={left} x2={left + plotW} y1={y(t)} y2={y(t)} stroke={TEMA.grilla} />
+          <line x1={left - TEMA.marca} x2={left} y1={y(t)} y2={y(t)} stroke={TEMA.tinta} />
           <text x={left - 8} y={y(t)} textAnchor="end" dominantBaseline="central" style={estiloTexto(est.numerosY)}>
             {fmtTick(t, paso)}
           </text>
@@ -52,9 +54,12 @@ export function EjeY({ ticks, paso, y, left, plotW, est, titulo }) {
 
 export function EtiquetasX({ labels, cx, yBase, ang, est }) {
   return labels.map((l, i) => (
-    <text key={l + i} transform={`translate(${cx(i)},${yBase + 10}) rotate(${-ang})`}
-      textAnchor={ang > 0 ? 'end' : 'middle'} dominantBaseline={ang > 0 ? 'central' : 'hanging'}
-      style={estiloTexto(est.nombresX)}>{l}</text>
+    <g key={l + i}>
+      <line x1={cx(i)} x2={cx(i)} y1={yBase} y2={yBase + TEMA.marca} stroke={TEMA.tinta} />
+      <text transform={`translate(${cx(i)},${yBase + 10}) rotate(${-ang})`}
+        textAnchor={ang > 0 ? 'end' : 'middle'} dominantBaseline={ang > 0 ? 'central' : 'hanging'}
+        style={estiloTexto(est.nombresX)}>{l}</text>
+    </g>
   ))
 }
 
@@ -195,12 +200,12 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
         <rect width={W} height={L.H} fill="#fff" />
         <Titulo W={W} est={est} />
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
-        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke="#444" />
-        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke="#444" />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke={TEMA.tinta} />
+        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke={TEMA.tinta} />
         {eY.min < 0 && <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke="#888" strokeDasharray="3 3" />}
 
         {lineas && umbrales.map((u) => (
-          <line key={u} x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#333" strokeDasharray="2 3" />
+          <line key={u} x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke={TEMA.umbral} strokeDasharray="5 3" />
         ))}
 
         {filas.map((f, i) => {
@@ -209,10 +214,10 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
           return (
             <g key={f.Muestra}>
               <rect x={cx(i) - bw / 2} y={y(Math.max(tvB(f.Media), base))} width={bw} height={Math.max(Math.abs(y(base) - y(tvB(f.Media))), 0.5)}
-                fill={colorBarra(f)} stroke="#333" strokeWidth="0.8" strokeDasharray={f.EsBlanco ? '4 2' : undefined}
+                fill={colorBarra(f)} stroke={TEMA.tinta} strokeWidth={TEMA.contorno} strokeDasharray={f.EsBlanco ? '4 2' : undefined}
                 data-tip={dBarra(`${f.Muestra}${f.EsBlanco ? ' (blanco)' : ''} · ${resta ? 'OD corregida' : 'OD'} media = ${fmt(f.Media)}`, pts.map((q) => q.OD), o.error, f.EsBlanco ? NaN : odc, f.Clasificacion, resta) + (rel ? `\n\n${ESCALAS[esc].cuenta(f.Media, odc, resta)}` : '')} />
               {Number.isFinite(e) && e > 0 && (
-                <g stroke="#111" strokeWidth="1.3" data-tip={`${f.Muestra} · barra de error ± ${fmt(e)}\n${dError(o.error, pts.map((q) => q.OD))}`}>
+                <g stroke={TEMA.tinta} strokeWidth="1.3" data-tip={`${f.Muestra} · barra de error ± ${fmt(e)}\n${dError(o.error, pts.map((q) => q.OD))}`}>
                   {(() => { const hi = y(tv(f.Media + e)), bajo = y(Math.max(tv(f.Media - e), eY.min)); return <>
                     <line x1={cx(i)} x2={cx(i)} y1={bajo} y2={hi} />
                     <line x1={cx(i) - bw * 0.18} x2={cx(i) + bw * 0.18} y1={hi} y2={hi} />
@@ -234,7 +239,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
 
         {lineas && clasesTxt.map((c, i) => (
           <g key={c[0]}>
-            <line x1={L.left + L.plotW} x2={L.left + L.plotW + 8} y1={ys[i]} y2={pos[i]} stroke="#999" />
+            <line x1={L.left + L.plotW} x2={L.left + L.plotW + 8} y1={ys[i]} y2={pos[i]} stroke={TEMA.umbral} />
             <EtiquetaFondo x={L.left + L.plotW + 12} y={pos[i] + (c[2].split('\n').length === 2 ? hLin * 0.1 : hLin * 0.35)}
               texto={c[2]} est={est.clases} anchor="start" pad={1} />
           </g>
@@ -268,8 +273,8 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
               return items.map(([t, col], i) => {
                 const g = (
                   <g key={t} transform={`translate(${x},0)`}>
-                    <rect width="14" height="14" y="-11" fill={col} stroke="#333" strokeWidth="0.6" strokeDasharray={col === COLOR_BLANCO ? '3 2' : undefined} />
-                    <text x="20" style={{ fontSize: 12, fill: '#333' }}>{t}</text>
+                    <rect width="14" height="14" y="-11" fill={col} stroke={TEMA.tinta} strokeWidth={TEMA.contorno} strokeDasharray={col === COLOR_BLANCO ? '3 2' : undefined} />
+                    <text x="20" style={{ fontSize: 12, fill: TEMA.texto }}>{t}</text>
                   </g>
                 )
                 x += w[i]
@@ -287,7 +292,7 @@ export const BarChart = forwardRef(function BarChart({ filas, puntos, odc, o, es
                 const gr = (
                   <g key={p.nombre} transform={`translate(${x},0)`}>
                     <circle cx="6" cy="-4" r="5" fill={p.color} stroke="#fff" strokeWidth="1" />
-                    <text x="16" style={{ fontSize: 12, fill: '#333' }}>{p.nombre}</text>
+                    <text x="16" style={{ fontSize: 12, fill: TEMA.texto }}>{p.nombre}</text>
                   </g>
                 )
                 x += w[i]
@@ -363,16 +368,16 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
         <rect width={W} height={L.H} fill="#fff" />
         <Titulo W={W} est={est} />
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
-        <line x1={L.left} x2={L.left + L.plotW} y1={y(Math.max(0, eY.min))} y2={y(Math.max(0, eY.min))} stroke="#444" />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(Math.max(0, eY.min))} y2={y(Math.max(0, eY.min))} stroke={TEMA.tinta} />
         {rel && ESCALAS[esc].umbrales.filter(([u]) => u > eY.min && u < eY.max).map(([u, t, k]) => (
           <g key={u} data-tip={tipPunto ? `${u} = ${t}\nlímite de clase` : `${u} = ${t} de esta placa (${fmt(k * odc, 3)} de OD)\nlímite de clase`}>
-            <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#999" strokeDasharray="3 3" />
+            <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke={TEMA.umbral} strokeDasharray="5 3" />
             <text x={L.left + L.plotW + 6} y={y(u) + 4} style={{ fontSize: 11, fill: '#6b7785' }}>{t}</text>
           </g>
         ))}
 
         {res.map((r, i) => r && (o.errores || o.medias) ? (
-          <g key={'m' + i} stroke="#111" strokeWidth="1.4" data-tip={tipGrupo(i)}>
+          <g key={'m' + i} stroke={TEMA.tinta} strokeWidth="1.4" data-tip={tipGrupo(i)}>
             <line x1={cx(i) - anchoM} x2={cx(i) + anchoM} y1={y(r.m)} y2={y(r.m)} stroke="transparent" strokeWidth="10" />
             <line x1={cx(i) - anchoM} x2={cx(i) + anchoM} y1={y(r.m)} y2={y(r.m)} />
             {o.errores && r.err !== null && Number.isFinite(r.err) && (
@@ -412,7 +417,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
         <EtiquetasX labels={labels} cx={cx} yBase={y(eY.min)} ang={o.rotar} est={est} />
         <LeyendaX L={L} est={est} />
 
-        <g transform={`translate(${L.left + L.plotW / 2},${L.H - 14})`} style={{ fontSize: 12, fill: '#333' }}>
+        <g transform={`translate(${L.left + L.plotW / 2},${L.H - 14})`} style={{ fontSize: 12, fill: TEMA.texto }}>
           <circle cx="-120" cy="-4" r="5" fill="#2f5d8a" /><text x="-110">Aceptado</text>
           <g stroke="#c0392b" strokeWidth="2.2"><line x1="-20" x2="-10" y1="-9" y2="1" /><line x1="-20" x2="-10" y1="1" y2="-9" /></g>
           <text x="-4">Excluido</text>
@@ -473,8 +478,8 @@ export const GroupedBarChart = forwardRef(function GroupedBarChart({ grupos, pla
         <rect width={W} height={L.H} fill="#fff" />
         <Titulo W={W} est={est} />
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
-        <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke="#444" />
-        <line x1={L.left} x2={L.left} y1={L.top} y2={y(0)} stroke="#444" />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke={TEMA.tinta} />
+        <line x1={L.left} x2={L.left} y1={L.top} y2={y(0)} stroke={TEMA.tinta} />
 
         {grupos.map((g, gi) => {
           const x0 = cx(gi) - (g.barras.length * bw) / 2
@@ -489,9 +494,9 @@ export const GroupedBarChart = forwardRef(function GroupedBarChart({ grupos, pla
                 return (
                   <g key={b.id}>
                     <rect x={bx + 1} y={y(b.media)} width={Math.max(bw - 2, 1)} height={Math.max(y(0) - y(b.media), 0)}
-                      fill={b.color} stroke="#333" strokeWidth="0.7" data-tip={`${g.muestra} · ${b.placa}\nOD media = ${fmt(b.media)}${hasErr ? ` ± ${fmt(b.err)}` : ''}\n${b.pts.length} pocillos`} />
+                      fill={b.color} stroke={TEMA.tinta} strokeWidth={TEMA.contorno} data-tip={`${g.muestra} · ${b.placa}\nOD media = ${fmt(b.media)}${hasErr ? ` ± ${fmt(b.err)}` : ''}\n${b.pts.length} pocillos`} />
                     {hasErr && (
-                      <g stroke="#111" strokeWidth="1.2">
+                      <g stroke={TEMA.tinta} strokeWidth="1.2">
                         <line x1={mx} x2={mx} y1={y(Math.max(b.media - b.err, 0))} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.18} x2={mx + bw * 0.18} y1={y(b.media + b.err)} y2={y(b.media + b.err)} />
                         <line x1={mx - bw * 0.18} x2={mx + bw * 0.18} y1={y(Math.max(b.media - b.err, 0))} y2={y(Math.max(b.media - b.err, 0))} />
@@ -527,8 +532,8 @@ export const GroupedBarChart = forwardRef(function GroupedBarChart({ grupos, pla
               {f.map((it) => {
                 const g = (
                   <g key={it.id} transform={`translate(${x},0)`}>
-                    <rect width="14" height="14" y="-11" rx="2" fill={it.color} stroke="#333" strokeWidth="0.6" />
-                    <text x="20" style={{ fontSize: 12, fill: '#333' }}>{it.nombre}</text>
+                    <rect width="14" height="14" y="-11" rx="2" fill={it.color} stroke={TEMA.tinta} strokeWidth={TEMA.contorno} />
+                    <text x="20" style={{ fontSize: 12, fill: TEMA.texto }}>{it.nombre}</text>
                   </g>
                 )
                 x += it.w
@@ -582,13 +587,13 @@ export const ReplicasChart = forwardRef(function ReplicasChart({ filas, o, est, 
         <Titulo W={W} est={est} />
         {varios && grupos.map((g, k) => k % 2 === 1 && <rect key={g.n} x={L.left + L.band * g.idx[0]} y={L.top} width={L.band * g.idx.length} height={L.plotH} fill="#f6f1e8" fillOpacity="0.6" />)}
         <EjeY ticks={eY.ticks} paso={eY.paso} y={y} left={L.left} plotW={L.plotW} est={est} titulo={est.leyendaY.texto || eje} />
-        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke="#444" />
-        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke="#444" />
+        <line x1={L.left} x2={L.left + L.plotW} y1={y(eY.min)} y2={y(eY.min)} stroke={TEMA.tinta} />
+        <line x1={L.left} x2={L.left} y1={L.top} y2={y(eY.min)} stroke={TEMA.tinta} />
         {eY.min < 0 && <line x1={L.left} x2={L.left + L.plotW} y1={y(0)} y2={y(0)} stroke="#888" strokeDasharray="3 3" />}
         {umbrales.map(([u, t]) => (
           <g key={u} data-tip={`${u} = ${t}\nlímite de clase`}>
-            <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke="#555" strokeDasharray="2 3" />
-            <text x={L.left + L.plotW + 4} y={y(u) + 4} style={{ fontSize: 11, fill: '#555' }}>{t}</text>
+            <line x1={L.left} x2={L.left + L.plotW} y1={y(u)} y2={y(u)} stroke={TEMA.umbral} strokeDasharray="5 3" />
+            <text x={L.left + L.plotW + 4} y={y(u) + 4} style={{ fontSize: 11, fill: TEMA.tenue }}>{t}</text>
           </g>
         ))}
         {grupos.map((g) => {
@@ -597,9 +602,9 @@ export const ReplicasChart = forwardRef(function ReplicasChart({ filas, o, est, 
           const txt = g.r ? (conErr(g) ? `${fmt(g.r.m)} ± ${fmt(g.r.err)}` : fmt(g.r.m)) : ''
           return (
             <g key={g.n} data-tip={dGrupo(g.n, usados, o.errores ? o.error : null)}>
-              {varios && <text x={xm} y={L.top + 14} textAnchor="middle" style={{ fontSize: 12, fontWeight: 600, fill: '#333' }}>{g.medio || 'sin medio'}</text>}
+              {varios && <text x={xm} y={L.top + 14} textAnchor="middle" style={{ fontSize: 12, fontWeight: 600, fill: TEMA.texto }}>{g.medio || 'sin medio'}</text>}
               {g.r && conErr(g) && <rect x={x1} y={y(g.r.m + g.r.err)} width={x2 - x1} height={Math.max(y(g.r.m - g.r.err) - y(g.r.m + g.r.err), 0.5)} fill="#2f5d8a" fillOpacity="0.1" />}
-              {g.r && <line x1={x1} x2={x2} y1={y(g.r.m)} y2={y(g.r.m)} stroke="#111" strokeWidth="1.6" />}
+              {g.r && <line x1={x1} x2={x2} y1={y(g.r.m)} y2={y(g.r.m)} stroke={TEMA.tinta} strokeWidth="1.6" />}
               {g.r && <line x1={x1} x2={x2} y1={y(g.r.m)} y2={y(g.r.m)} stroke="transparent" strokeWidth="10" />}
               {o.medias && g.r && <EtiquetaFondo x={xm} y={L.top + (varios ? 30 : 14)} est={est.valores} texto={txt} />}
             </g>
@@ -615,12 +620,12 @@ export const ReplicasChart = forwardRef(function ReplicasChart({ filas, o, est, 
                 <line x1={cx(i) - 6} x2={cx(i) + 6} y1={yv(e.OD) + 6} y2={yv(e.OD) - 6} />
               </g>
             )}
-            <text x={cx(i) + 13} y={yv(e.OD) + 4} style={{ fontSize: 11.5, fill: e.Usado ? '#333' : '#c0392b' }}>{fmt(e.OD)}</text>
+            <text x={cx(i) + 13} y={yv(e.OD) + 4} style={{ fontSize: 11.5, fill: e.Usado ? TEMA.texto : '#c0392b' }}>{fmt(e.OD)}</text>
           </g>
         ))}
         <EtiquetasX labels={labels} cx={cx} yBase={y(eY.min)} ang={o.rotar} est={est} />
         <LeyendaX L={L} est={est} />
-        <g transform={`translate(${W / 2},${L.H - 14})`} style={{ fontSize: 12, fill: '#333' }}>
+        <g transform={`translate(${W / 2},${L.H - 14})`} style={{ fontSize: 12, fill: TEMA.texto }}>
           <circle cx="-120" cy="-4" r="5" fill="#2f5d8a" /><text x="-110">Aceptado</text>
           <g stroke="#c0392b" strokeWidth="2.2"><line x1="-20" x2="-10" y1="-9" y2="1" /><line x1="-20" x2="-10" y1="1" y2="-9" /></g>
           <text x="-4">Excluido</text>

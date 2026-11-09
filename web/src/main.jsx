@@ -7,6 +7,9 @@ import '@fontsource/ibm-plex-sans/latin-600.css'
 import '@fontsource/ibm-plex-sans/latin-700.css'
 import '@fontsource/ibm-plex-sans/greek-400.css'
 import '@fontsource/ibm-plex-sans/greek-600.css'
+import '@fontsource/ibm-plex-serif/latin-400.css'
+import '@fontsource/ibm-plex-serif/latin-500.css'
+import '@fontsource/ibm-plex-serif/latin-400-italic.css'
 import './styles.css'
 
 // el tema se aplica antes de dibujar (sin destello claro al abrir en oscuro)

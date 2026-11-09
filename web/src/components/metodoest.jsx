@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Campo, Select } from './ui.jsx'
 import { Nota } from './tip.jsx'
+import { BloqueConTusDatos } from './metodobloque.jsx'
 import { dentroDeSel, juntarDe, objetivoDe, usaMedio } from './pruebas.jsx'
 import { seroDe, serotiposDe, valoresSerotipo } from '../serotipos.js'
 import { dentroDeGrupo, nombreGrupo, usaPlaca } from '../grupolibre.js'
@@ -81,8 +82,8 @@ const DIC = {
 const PIE = [[/^SC entre/, 'Variación entre las medias de los grupos y la media general.'], [/^SC dentro/, 'Variación de los datos alrededor de la media de su grupo (error).'], [/^SC total/, 'Variación total de todos los datos.']]
 function Tabla({ cols, filas, pie }) {
   return (
-    <div className="tabla-scroll chica">
-      <table className="tabla paso-tabla">
+    <div className="tabla-scroll chica sin-marco">
+      <table className="tabla paso-tabla tres-lineas">
         <thead><tr>{cols.map((c) => <th key={c} data-tip={DIC[c] ? `${c}\n${DIC[c][0]}` : c}>{c}</th>)}</tr></thead>
         <tbody>{filas.map((r, i) => <tr key={i}>{r.map((v, j) => {
           const d = DIC[cols[j]]
@@ -193,6 +194,7 @@ function prepararBloques(s, D, o) {
   const obsPlaca = obsPlaca0.filter(sel), obsPozo = obsPozo0.filter(sel)
   const obs = (nivel === 'pocillo' ? obsPozo : obsPlaca).filter((x) => finito(x.y))
   const cepas = [...new Set(obs.map((x) => x.cepa))], medios = [...new Set(obs.map((x) => x.medio))]
+  const detDe = (c, m) => obs.filter((x) => x.cepa === c && (m === null || x.medio === m)).map((x) => ({ placaId: x.placaId, y: x.y }))
   const vals = (c, m, p) => obs.filter((x) => (c === null || x.cepa === c) && (m === null || x.medio === m) && (p === null || x.placa === p)).map((x) => x.y)
   const comp = o.comp || 'pares'
   const ctrlMedio = medios.includes(o.ctrlMedio) ? o.ctrlMedio : medios[0]
@@ -225,8 +227,8 @@ function prepararBloques(s, D, o) {
     if (serosIn.length >= 2) bloques = juntarDe(o) ? [bloque(null)] : medios.filter((m) => m !== '(sin medio)').map(bloque)
   }
   else if (obj === 'medios') bloques = conjuntos.flatMap((S) => cepas.map((c) => ({ titulo: `${c}${sfx(S)}: entre medios`, grupos: S.map((m) => ({ nombre: m, v: vals(c, m, null) })), ctrl: ctrlEn(S, ctrlMedio) })))
-  else if (obj === 'cepastodas') bloques = conjuntos.map((S) => ({ titulo: `Todos los medios${sfx(S)}: entre cepas`, grupos: S.map((c) => ({ nombre: c, v: vals(c, null, null) })), ctrl: ctrlEn(S, ctrlCepa) }))
-  else if (obj === 'cepas') bloques = conjuntos.flatMap((S) => medios.map((m) => ({ titulo: `Medio ${m}${sfx(S)}: entre cepas`, grupos: S.map((c) => ({ nombre: c, v: vals(c, m, null) })), ctrl: ctrlEn(S, ctrlCepa) })))
+  else if (obj === 'cepastodas') bloques = conjuntos.map((S) => ({ titulo: `Todos los medios${sfx(S)}: entre cepas`, grupos: S.map((c) => ({ nombre: c, v: vals(c, null, null), det: detDe(c, null) })), ctrl: ctrlEn(S, ctrlCepa) }))
+  else if (obj === 'cepas') bloques = conjuntos.flatMap((S) => medios.map((m) => ({ titulo: `Medio ${m}${sfx(S)}: entre cepas`, grupos: S.map((c) => ({ nombre: c, v: vals(c, m, null), det: detDe(c, m) })), ctrl: ctrlEn(S, ctrlCepa) })))
   else if (obj === 'placastodas') cepas.forEach((c) => conjuntos.forEach((S) => {
     const pls = [...new Set(obs.filter((x) => x.cepa === c && S.includes(x.placaId)).map((x) => x.placa))]
     if (pls.length >= 2) bloques.push({ titulo: `${c}${sfx(S)}: entre todas las placas`, grupos: pls.map((p) => ({ nombre: `${p} · ${obs.find((x) => x.placa === p).medio}`, v: vals(c, null, p) })), ctrl: null, cepa: c, placaIds: S })
@@ -262,6 +264,10 @@ function Ejemplo({ s }) {
   const sw = r.sw
   const swUtil = !!sw && N >= 8
   const levGr = g.filter((x) => x.v.length >= 3)
+  // ¿Estadística usa la placa como bloque? (cepas, réplica = placa por defecto, sin cepas excluidas entre réplicas)
+  const excluidas = (s.replicasFuera || []).some((x) => g.some((y) => y.nombre === x.Cepa))
+  const conBloque = ['cepas', 'cepastodas'].includes(P.obj) && o.nivel !== 'placa' && o.nivel !== 'pocillo' && !excluidas && g.every((x) => x.det)
+  const nombrePlaca = (id) => P.obsPlaca.find((x) => x.placaId === id)?.placa || id
 
   // Levene paso a paso
   const medianaDe = (v) => { const a = [...v].sort((x, y) => x - y), n = a.length; return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2 }
@@ -327,8 +333,10 @@ function Ejemplo({ s }) {
         <Campo label={`Análisis a desarrollar (${P.bloques.length})`}>
           <Select value={b.titulo} onChange={setSel} opciones={P.bloques.map((x) => [x.titulo, x.titulo])} />
         </Campo>
-        <p className="ayuda" style={{ margin: 0, maxWidth: 520 }}>Variable: <b>{P.unidad}</b> · réplica: <b>{P.obj === 'placas' || P.obj === 'placastodas' ? 'pocillo (los grupos son las placas)' : P.nivel === 'cepa' ? 'cepa (la media de sus placas; los grupos son los serotipos)' : P.nivel === 'placa' ? 'placa (un valor por placa)' : 'pocillo'}</b> · prueba: <b>{P.forzado === 'auto' ? 'automática' : NOMBRE[P.forzado]}</b>. Cambian con lo que elijas en la pestaña «Estadística».{(['cepas', 'cepastodas', 'libre'].includes(P.obj) && o.nivel !== 'placa' && o.nivel !== 'pocillo') || (P.obj === 'serotipos' && o.nivelSero === 'bloque') ? ' Si en Estadística se usa la placa como bloque, acá se desarrolla la versión de una vía; la tabla del modelo en bloques está en Estadística › «Tabla de la prueba global» (sección 4b).' : ''}</p>
+        <p className="ayuda" style={{ margin: 0, maxWidth: 520 }}>Variable: <b>{P.unidad}</b> · réplica: <b>{P.obj === 'placas' || P.obj === 'placastodas' ? 'pocillo (los grupos son las placas)' : P.nivel === 'cepa' ? 'cepa (la media de sus placas; los grupos son los serotipos)' : P.nivel === 'placa' ? 'placa (un valor por placa)' : 'pocillo'}</b> · prueba: <b>{P.forzado === 'auto' ? 'automática' : NOMBRE[P.forzado]}</b>. Cambian con lo que elijas en la pestaña «Estadística».{(['cepas', 'cepastodas', 'libre'].includes(P.obj) && o.nivel !== 'placa' && o.nivel !== 'pocillo') || (P.obj === 'serotipos' && o.nivelSero === 'bloque') ? ' Con la placa como bloque, su desarrollo va primero; las secciones A a F muestran los supuestos y la versión sin bloque, para comparar.' : ''}</p>
       </div>
+
+      {conBloque && <BloqueConTusDatos grupos={g} nombrePlaca={nombrePlaca} unidad={P.unidad} />}
 
       <H4>A. Los datos de cada grupo</H4>
       <Tabla cols={['Grupo', 'n', 'Datos', 'Media x̄', 'Varianza s²', 'DE s']}

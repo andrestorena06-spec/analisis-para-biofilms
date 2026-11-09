@@ -4,11 +4,11 @@ export const pocillos96 = () => FILAS.flatMap((f) => Array.from({ length: 12 }, 
 
 export const CLASES = ['No productor', 'Productor débil', 'Productor moderado', 'Productor fuerte']
 export const COLOR_CLASE = {
-  'No productor': '#e15759',
-  'Productor débil': '#f2c94c',
-  'Productor moderado': '#a5d86e',
-  'Productor fuerte': '#2f9e44',
-  Blanco: '#b0bec5',
+  'No productor': '#d0685f',
+  'Productor débil': '#ebc35a',
+  'Productor moderado': '#9fc977',
+  'Productor fuerte': '#3f8a4a',
+  Blanco: '#bcc5cc',
   Excluido: '#eceff1',
 }
 
@@ -181,19 +181,19 @@ export function exportarSVG(svg, nombre, formato = 'png', escala = 3) {
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)
 }
 
-const t = (size, color = '#1f2933', extra = {}) => ({
+const t = (size, color = '#3a2005', extra = {}) => ({
   size, color, bold: false, italic: false, underline: false, strike: false, texto: '', ...extra,
 })
 
 // Cada texto del gráfico tiene su propio formato. `texto` vacío = texto por defecto.
 export const estiloDefecto = () => ({
-  titulo: t(18, '#1f2933', { bold: true }),
+  titulo: t(18, '#3a2005', { bold: true }),
   leyendaY: t(14),
   leyendaX: t(14),
   nombresX: t(12),
   numerosY: t(12),
   valores: t(12),
-  clases: t(11, '#333333'),
+  clases: t(11, '#5a4128'),
 })
 
 // Convierte estilos guardados con versiones anteriores al formato actual
