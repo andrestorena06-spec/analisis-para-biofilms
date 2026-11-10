@@ -592,7 +592,7 @@ button[data-tip], .chip-placa[data-tip] { cursor: pointer; }
 .avanzado[open] > summary { margin-bottom: 10px; }
 .resumen-todas .tabla th.grupo-medio { text-align: center; border-bottom: 2px solid var(--acento); color: var(--texto); }
 .resumen-todas thead tr:nth-child(2) th { top: 29px; }
-.resumen-todas .col-media { background: var(--panel2) !important; font-weight: 700; border-left: 1px solid var(--borde2); border-right: 1px solid var(--borde2); }
+.resumen-todas .col-media { background: var(--panel2) !important; font-weight: 500; border-left: 1px solid var(--borde2); border-right: 1px solid var(--borde2); }
 .resumen-todas th.col-resultado, .resumen-todas td.col-resultado { border-left: 2px solid var(--borde2); white-space: nowrap; }
 .resumen-todas td.col-resultado small { color: var(--sec); font-size: var(--t-xs); }
 .resumen-todas td.col-resultado.dif { background: transparent; }
@@ -758,3 +758,16 @@ table.tres-lineas { border-collapse: collapse; border-top: 1.5px solid var(--tex
 .letra-grupo { font-weight: 500; color: var(--texto); }
 .leyenda-fila h4 { margin: 14px 0 4px; }
 .leyenda-sola { justify-content: flex-end; }
+
+/* Tabla de todas las cepas: texto casi negro para que contraste, sin negritas */
+:root, [data-tema='claro'] { --tinta-tabla: #1E1408; }
+[data-tema='oscuro'] { --tinta-tabla: var(--texto); }
+.resumen-todas .tabla td { color: var(--tinta-tabla); }
+.resumen-todas .tabla th { color: var(--tinta-tabla); font-weight: 500; }
+.resumen-todas .nombre-fila { font-weight: 500; }
+.resumen-todas td.col-resultado b { font-weight: 500; }
+.resumen-todas .tabla td.tenue { color: var(--tenue); }
+/* placas que no entran en la prueba: el número sigue en negro; se nota por el color de fondo más claro y el título tenue */
+.resumen-todas td.apagada { opacity: 1; }
+.matriz-clase td.celda-clase.apagada { background: color-mix(in srgb, var(--clase) 10%, var(--panel)) !important; box-shadow: inset 3px 0 0 color-mix(in srgb, var(--clase) 45%, var(--panel)); }
+.resumen-todas th.apagada { opacity: 1; color: var(--tenue); font-weight: 400; }

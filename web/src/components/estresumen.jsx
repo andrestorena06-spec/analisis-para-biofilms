@@ -36,7 +36,7 @@ export function ResumenTodas({ titulo, nota, placas, apagadas, filas, conMedia, 
           <tbody>
             {filas.map((fi) => (
               <tr key={fi.cepa} className={`${fi.elegida ? 'elegida' : ''} ${fi.onClick ? 'fila-clic' : ''} ${fi.apagada ? 'fuera' : ''}`} onClick={fi.onClick} data-tip={fi.onClick && !fi.elegida ? `Ver ${fi.cepa} en los paneles` : undefined}>
-                <td><b>{fi.cepa}</b></td>
+                <td className="nombre-fila">{fi.cepa}</td>
                 {grupos.flatMap((g) => [
                   ...g.placas.map((p) => {
                     const c = fi.celdas[p.id]
