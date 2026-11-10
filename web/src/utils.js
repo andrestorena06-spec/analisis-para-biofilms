@@ -88,10 +88,10 @@ export function paletaMuestras(muestras) {
   return out
 }
 
-// Color de cada placa: cada medio tiene su familia (BHI rojos, TSB azules; los demás, otras familias) y dentro
+// Color de cada placa: cada medio tiene su familia (BHI naranjas, TSB celestes, como antes; los demás, otras familias) y dentro
 // del medio las placas van de oscuro a claro, bien separadas. Se calcula con TODAS las placas: cada placa tiene
 // el mismo color en la barra de placas, los gráficos, Estadística y el resumen.
-const FAMILIAS = [[4, 64], [214, 60], [135, 42], [275, 40], [36, 72], [182, 48]]   // [tono, saturación]
+const FAMILIAS = [[15, 62], [195, 62], [135, 42], [275, 40], [330, 45], [55, 60]]   // [tono, saturación]
 const familiaPorNombre = (m) => (/bhi/i.test(m) ? 0 : /tsb|tripti|trypt/i.test(m) ? 1 : null)
 export function paletaPlacas(placas) {
   const medios = [...new Set(placas.map((p) => p.medio || ''))]
@@ -101,9 +101,9 @@ export function paletaPlacas(placas) {
   const placa = {}, medio = {}
   medios.forEach((m) => {
     const [h, sat] = FAMILIAS[fam[m]]
-    medio[m] = `hsl(${h}, ${sat}%, 46%)`
+    medio[m] = `hsl(${h}, ${sat}%, 52%)`
     const ps = placas.filter((p) => (p.medio || '') === m)
-    ps.forEach((p, i) => { const L = ps.length > 1 ? 32 + (40 * i) / (ps.length - 1) : 48; placa[p.id] = `hsl(${h}, ${sat}%, ${L.toFixed(0)}%)` })
+    ps.forEach((p, i) => { const L = ps.length > 1 ? 40 + (34 * i) / (ps.length - 1) : 52; placa[p.id] = `hsl(${h}, ${sat}%, ${L.toFixed(0)}%)` })
   })
   return { placa, medio }
 }
