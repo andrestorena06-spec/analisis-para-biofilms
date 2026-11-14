@@ -146,7 +146,7 @@ export function PasoAPaso({ s }) {
             porque={<>Un pocillo con una burbuja, mal lavado o con un error de pipeteo puede dar muy distinto a sus réplicas. {det.metodo === 'q'
               ? <><b>El test Q de Dixon</b> mira si el valor del extremo está demasiado lejos de su vecino comparado con el rango de todas las réplicas.</>
               : det.metodo === 'grubbs' ? <><b>El test de Grubbs</b> mide a cuántos desvíos de la media está el valor más extremo.</>
-                : <><b>Si el CV supera {cvMax} %</b>, el pocillo más alejado de la media queda como sospechoso.</>}{resta ? ' Se hace con la OD leída.' : ''}</>}>
+                : <><b>Si el CV supera {cvMax} %</b>, el pocillo más alejado de la media queda como sospechoso; se repite de a uno hasta cumplir el límite o quedar 2 pocillos.</>}{resta ? ' Se hace con la OD leída.' : ''}</>}>
             {orden.length >= 3 ? (
               <>
                 <Tabla leyenda={<>Réplicas de «{muestra}» ordenadas de menor a mayor.</>}
@@ -157,7 +157,7 @@ export function PasoAPaso({ s }) {
                 <Cuenta izq={det.metodo === 'q' ? 'Q' : det.metodo === 'grubbs' ? 'G' : 'CV'}
                   pasos={[det.metodo === 'q' ? 'mayor distancia / rango' : det.metodo === 'grubbs' ? 'máx |OD − x̄| / DE' : '100 × DE / x̄']}
                   res={`${f(d.stat, 3)} ${d.idx !== null ? '>' : '≤'} ${f(d.crit, 3)} (valor crítico)`} />
-                <p className={`decision ${d.idx !== null ? 'dif' : 'ok'}`}>{d.idx !== null ? `Sospechoso: ${todas[d.idx]?.Pocillo} (extremo ${d.lado}). Se decide en «Revisión».` : 'Ningún pocillo raro: todas las réplicas son parecidas.'}</p>
+                <p className={`decision ${d.idx !== null ? 'dif' : 'ok'}`}>{det.metodo === 'cv' && d.idxs?.length ? `Se quitan, de a uno y en este orden: ${d.idxs.map((i) => todas[i]?.Pocillo).join(' → ')}. CV final ${f(d.cvSin, 2)} %${d.alcanzado ? '' : ' (no llega al límite: quedan 2 pocillos)'}. Se decide en «Revisión».` : d.idx !== null ? `Sospechoso: ${todas[d.idx]?.Pocillo} (extremo ${d.lado}). Se decide en «Revisión».` : 'Ningún pocillo raro: todas las réplicas son parecidas.'}</p>
               </>
             ) : <p className="ayuda">Hacen falta al menos 3 réplicas.</p>}
           </Paso>

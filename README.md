@@ -27,10 +27,10 @@ No requiere instalar nada (ni R ni Node.js) ni conexión a internet. Se abre en 
   consistencia de la clasificación y control de las placas (verificado contra R).
 - **Reproducibilidad entre experimentos** (cada placa es una repetición): CV % entre experimentos, ANOVA de una vía o
   Kruskal-Wallis según Shapiro-Wilk, ANOVA de dos vías cepa × experimento, correlación de Pearson/Spearman entre pares
-  e ICC(2,1) y ICC(3,1) con IC 95 %; resumen para copiar y descarga a Excel.
+  e ICC(2,1) y ICC(3,1) con IC 95 %, CV intra-ensayo y Dunnett contra un control; resumen para copiar y descarga a Excel.
 - Lee el archivo del lector (`.xlsx`, `.csv`, `.txt`), detecta la placa y la longitud de onda.
 - Configuración de pocillos por arrastre, con muestras, réplicas automáticas y blancos.
-- Detección de valores atípicos: test Q de Dixon, test de Grubbs y coeficiente de variación (%RSD) con límite.
+- Detección de valores atípicos: test Q de Dixon, test de Grubbs y coeficiente de variación (%RSD) con límite; este último es iterativo (quita de a un pocillo, el más alejado de la media, hasta cumplir el CV máximo o quedar 2). Los excluidos no entran en ningún cálculo posterior.
 - Punto de corte `ODc = media(blancos) + 3 × DE(blancos)` y clasificación: no productor, débil, moderado, fuerte.
 - Gráficos de barras y de exclusión de puntos con promedio y error (SD, SEM, IC 95 %), textos editables con clic derecho,
   descarga de imagen con ajuste visual de proporción (PNG, JPG, SVG).

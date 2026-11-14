@@ -194,7 +194,7 @@ export function abrirInforme(s) {
     <div class="portada"><h1>Informe de producción de biofilm</h1>
       <p class="meta">Generado el ${esc(fecha)} · ${conAn.length} ${conAn.length === 1 ? 'placa' : 'placas'}</p>
       <p><b>Cálculo.</b> Punto de corte ODc = media(blancos) + 3 × DE(blancos), con los blancos aceptados. Clasificación (Stepanović et al., 2000) con la media de las réplicas aceptadas: no productor (OD ≤ ODc), débil (≤ 2×ODc), moderado (≤ 4×ODc) y fuerte (&gt; 4×ODc).</p>
-      <p><b>Valores atípicos.</b> Método: ${esc(METODOS[det.metodo] || det.metodo)}${det.metodo === 'cv' ? ` (CV máximo ${esc(det.cvMax)} %)` : ` (confianza ${esc(det.conf)} %)`}; ${det.usar ? 'los sospechosos se excluyeron automáticamente' : 'los sospechosos solo se marcaron'}. Las exclusiones manuales están reflejadas en las tablas.</p>
+      <p><b>Valores atípicos.</b> Método: ${esc(METODOS[det.metodo] || det.metodo)}${det.metodo === 'cv' ? ` (CV máximo ${esc(det.cvMax)} %; se quita de a un pocillo, el más alejado de la media, hasta cumplirlo o quedar 2 pocillos)` : ` (confianza ${esc(det.conf)} %)`}; ${det.usar ? 'los sospechosos se excluyeron automáticamente' : 'los sospechosos solo se marcaron'}. Las exclusiones manuales están reflejadas en las tablas.</p>
       <p><b>Errores.</b> DE = desviación estándar muestral (n − 1); SEM = DE/√n; IC 95 % = t(0,975; n − 1) × SEM. En las comparaciones cada placa es una réplica.</p>
     </div>
     ${secciones.join('')}${entreReplicas}${comparacion}${estadistica}

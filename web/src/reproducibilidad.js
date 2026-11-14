@@ -5,10 +5,13 @@
 //      Shapiro-Wilk de los residuos y Kruskal-Wallis como alternativa; ANOVA de dos vías cepa × experimento (tipo II).
 //   3. Correlación entre pares de experimentos (Pearson y Spearman) con la media de cada cepa.
 //   4. Concordancia global: ICC(2,1) de acuerdo absoluto e ICC(3,1) de consistencia (Shrout y Fleiss), IC 95 %.
+//   5. Cepas contra un control: prueba de Dunnett con un valor por experimento (n = experimentos).
+//   Además, CV intra-ensayo: el de los pocillos de cada cepa dentro de cada placa.
 // Equivalentes: aov / car::Anova(type = 2), shapiro.test, kruskal.test, cor.test, psych::ICC / pingouin.
 // ============================================================
 import { betaInc } from './utils.js'
 import { anova1, desvio, media } from './estadistica.js'
+import { dunnettP } from './decision.js'
 
 const finito = Number.isFinite
 
@@ -287,6 +290,27 @@ export function anova2(datos) {
   }
 }
 
+// ---------- Dunnett: cada cepa contra un control, con un valor por experimento (igual que scipy.stats.dunnett) ----------
+// medias: { cepa: [valor por experimento] }
+export function dunnettCepas(medias, cepas, control) {
+  const g = cepas.map((c) => ({ cepa: c, v: (medias[c] || []).filter(finito) })).filter((x) => x.v.length)
+  const ctrl = g.find((x) => x.cepa === control)
+  const otros = g.filter((x) => x.cepa !== control)
+  if (!ctrl || !otros.length) return null
+  const N = g.reduce((s, x) => s + x.v.length, 0), k = g.length
+  const dfe = N - k
+  const sce = g.reduce((s, x) => { const m = media(x.v); return s + x.v.reduce((a, y) => a + (y - m) ** 2, 0) }, 0)
+  const mse = dfe > 0 ? sce / dfe : NaN
+  const lam = otros.map((x) => Math.sqrt(x.v.length / (x.v.length + ctrl.v.length)))
+  const mc = media(ctrl.v)
+  const filas = otros.map((x) => {
+    const dif = media(x.v) - mc
+    const t = mse > 0 ? dif / Math.sqrt(mse * (1 / x.v.length + 1 / ctrl.v.length)) : NaN
+    return { cepa: x.cepa, n: x.v.length, media: media(x.v), sd: x.v.length > 1 ? desvio(x.v) : NaN, dif, t, p: finito(t) ? dunnettP(Math.abs(t), lam, dfe) : NaN }
+  })
+  return { control, nControl: ctrl.v.length, mediaControl: mc, sdControl: ctrl.v.length > 1 ? desvio(ctrl.v) : NaN, df: dfe, mse, filas }
+}
+
 // ---------- análisis completo ----------
 // exps: [{ id, nombre }] (placas = experimentos); valores(exp, cepa) → array de pocillos aceptados
 export function reproducibilidad(exps, cepas, valores) {
@@ -297,6 +321,16 @@ export function reproducibilidad(exps, cepas, valores) {
     const v = medias[c].filter(finito)
     const m = media(v), sd = v.length > 1 ? desvio(v) : NaN
     return { cepa: c, n: v.length, media: m, sd, cv: finito(sd) && m !== 0 ? (100 * sd) / Math.abs(m) : NaN, porExp: medias[c] }
+  })
+  // CV intra-ensayo: pocillos de cada cepa dentro de cada placa
+  const intra = cepas.map((c) => {
+    const porExp = exps.map((e) => {
+      const v = valores(e, c)
+      const m = media(v), sd = v.length > 1 ? desvio(v) : NaN
+      return finito(sd) && m !== 0 ? (100 * sd) / Math.abs(m) : NaN
+    })
+    const ok = porExp.filter(finito)
+    return { cepa: c, porExp, media: ok.length ? media(ok) : NaN, max: ok.length ? Math.max(...ok) : NaN }
   })
   // 2. ¿difieren los experimentos? por cepa, con los pocillos
   const porCepa = cepas.map((c) => {
@@ -323,5 +357,5 @@ export function reproducibilidad(exps, cepas, valores) {
   // 4. ICC con las cepas que tienen dato en todos los experimentos
   const completas = cepas.filter((c) => medias[c].every(finito))
   const ICC = icc(completas.map((c) => medias[c]))
-  return { variab, porCepa, dos, pares, normalExp, expsIdx: Object.fromEntries(exps.map((e, i) => [e.id, i])), completas, icc: ICC, medias }
+  return { variab, intra, porCepa, dos, pares, normalExp, expsIdx: Object.fromEntries(exps.map((e, i) => [e.id, i])), completas, icc: ICC, medias }
 }

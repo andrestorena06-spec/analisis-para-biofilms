@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Nota } from './tip.jsx'
-import { Check, Num, Vacio } from './ui.jsx'
+import { Check, Num, Select, Vacio } from './ui.jsx'
 import { BotonCinta, Cajon, CampoCinta, Cinta, Grupo, OpcionesCinta } from './cinta.jsx'
 import { excelDe } from '../api.js'
 import { GrupoBlanco } from './blanco.jsx'
 import { descargarBlob } from '../utils.js'
-import { nivelIcc, reproducibilidad } from '../reproducibilidad.js'
+import { dunnettCepas, nivelIcc, reproducibilidad } from '../reproducibilidad.js'
 
 const finito = Number.isFinite
 const pTxt = (p) => (p === null || p === undefined || !finito(p) ? '–' : p < 0.0001 ? '< 0,0001' : p.toFixed(4).replace('.', ','))
@@ -33,6 +33,7 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
   const cepas = todas.filter((m) => !fuera.has(m))
   const exps = placasSel.map((p) => ({ id: p.id, nombre: p.nombre }))
 
+  // los pocillos excluidos (a mano o por la detección de atípicos) ya vienen sin «Usado»: no entran
   const R = useMemo(() => {
     if (exps.length < 2 || !cepas.length) return null
     const valores = (e, c) => {
@@ -44,6 +45,8 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
     return reproducibilidad(exps, cepas, valores)
   }, [s.analisisMap, exps.map((e) => e.id).join(), cepas.join(), variable]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const control = cepas.includes(o.reproControl) ? o.reproControl : cepas[0] || ''
+  const DUN = useMemo(() => (R && control ? dunnettCepas(R.medias, cepas, control) : null), [R, control, cepas.join()]) // eslint-disable-line react-hooks/exhaustive-deps
   const nomVar = variable === 'odc' ? 'OD ÷ ODc' : D.corregida ? 'OD corregida' : 'OD'
   const evalCv = (cv) => (!finito(cv) ? '–' : cv <= cvBueno ? 'Buena' : cv <= cvMax ? 'Aceptable' : 'Alta variabilidad')
 
@@ -56,6 +59,8 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
       const malos = cvs.filter((v) => v.cv > cvMax)
       out.push(`Variabilidad entre los ${exps.length} experimentos (${nomVar}): CV de ${n1(Math.min(...cvs.map((v) => v.cv)))} % a ${n1(Math.max(...cvs.map((v) => v.cv)))} %. ${malos.length ? `Superan el ${cvMax} %: ${malos.map((v) => v.cepa).join(', ')}.` : `Todas las cepas quedan en ${cvMax} % o menos.`}`)
     }
+    const intras = R.intra.filter((c) => finito(c.media))
+    if (intras.length) out.push(`CV intra-ensayo (pocillos de cada placa): de ${n1(Math.min(...intras.map((c) => c.media)))} % a ${n1(Math.max(...intras.map((c) => c.media)))} % en promedio por cepa; máximo en una placa ${n1(Math.max(...intras.map((c) => c.max)))} %.`)
     const conP = R.porCepa.filter((c) => (c.usarKw ? c.kw : c.anova))
     if (conP.length) {
       const dif = conP.filter((c) => (c.usarKw ? c.kw.p : c.anova.p) < 0.05)
@@ -69,15 +74,21 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
     if (prs.length) {
       out.push(`Correlación entre experimentos: ${prs.map((x) => { const c = elegirCorr(x, R); return `${x.a.nombre} vs ${x.b.nombre} ${c.nombre} = ${n2(c.res.r)} (${pEq(c.res.p)})` }).join('; ')}.`)
     }
+    if (DUN) {
+      const sig = DUN.filas.filter((f) => f.p < 0.05)
+      out.push(`Prueba de Dunnett contra «${DUN.control}» (n = experimentos): ${sig.length ? `difieren del control ${sig.map((f) => `${f.cepa} (${f.dif > 0 ? 'mayor' : 'menor'}, ${pEq(f.p)})`).join(', ')}` : 'ninguna cepa difiere significativamente del control'}${sig.length < DUN.filas.length && sig.length ? `; sin diferencia clara: ${DUN.filas.filter((f) => !(f.p < 0.05)).map((f) => f.cepa).join(', ')}` : ''}.`)
+    }
     if (R.icc) out.push(`Concordancia global: ICC(2,1) de acuerdo absoluto = ${n2(R.icc.icc2)} (IC 95 %: ${n2(R.icc.ic2[0])} a ${n2(R.icc.ic2[1])}), ${nivelIcc(R.icc.icc2).toLowerCase()}; ICC(3,1) de consistencia = ${n2(R.icc.icc3)}.`)
     return out
-  }, [R, cvMax, nomVar, exps.length])
+  }, [R, DUN, cvMax, nomVar, exps.length])
 
   const descargar = () => {
     if (!R) return
     const hojas = []
     hojas.push({ nombre: 'Variabilidad', columnas: ['Cepa', ...exps.map((e) => e.nombre), 'n', 'Media', 'DE', 'CV_pct', 'Evaluacion'],
       filas: R.variab.map((v) => ({ Cepa: v.cepa, ...Object.fromEntries(exps.map((e, i) => [e.nombre, finito(v.porExp[i]) ? v.porExp[i] : null])), n: v.n, Media: v.media, DE: finito(v.sd) ? v.sd : null, CV_pct: finito(v.cv) ? v.cv : null, Evaluacion: evalCv(v.cv) })) })
+    hojas.push({ nombre: 'CV intra-ensayo', columnas: ['Cepa', ...exps.map((e) => e.nombre), 'CV_intra_medio', 'CV_intra_max'],
+      filas: R.intra.map((c) => ({ Cepa: c.cepa, ...Object.fromEntries(exps.map((e, i) => [e.nombre, finito(c.porExp[i]) ? c.porExp[i] : null])), CV_intra_medio: finito(c.media) ? c.media : null, CV_intra_max: finito(c.max) ? c.max : null })) })
     hojas.push({ nombre: 'Entre experimentos', columnas: ['Cepa', 'Pocillos', 'Shapiro_W', 'Shapiro_p', 'ANOVA_F', 'ANOVA_gl', 'ANOVA_p', 'Kruskal_H', 'Kruskal_gl', 'Kruskal_p', 'Prueba', 'p'],
       filas: R.porCepa.map((c) => ({ Cepa: c.cepa, Pocillos: c.n, Shapiro_W: c.sw?.W ?? null, Shapiro_p: c.sw?.p ?? null, ANOVA_F: c.anova?.F ?? null, ANOVA_gl: c.anova ? `${c.anova.df1}; ${c.anova.df2}` : null, ANOVA_p: c.anova?.p ?? null,
         Kruskal_H: c.kw?.H ?? null, Kruskal_gl: c.kw?.df ?? null, Kruskal_p: c.kw?.p ?? null, Prueba: c.usarKw ? 'Kruskal-Wallis' : 'ANOVA', p: (c.usarKw ? c.kw?.p : c.anova?.p) ?? null })) })
@@ -90,6 +101,8 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
         { Tipo: 'ICC(2,1) acuerdo absoluto', ICC: R.icc.icc2, IC95_inf: R.icc.ic2[0], IC95_sup: R.icc.ic2[1], Concordancia: nivelIcc(R.icc.icc2) },
         { Tipo: 'ICC(3,1) consistencia', ICC: R.icc.icc3, IC95_inf: R.icc.ic3[0], IC95_sup: R.icc.ic3[1], Concordancia: nivelIcc(R.icc.icc3) },
       ] })
+    if (DUN) hojas.push({ nombre: 'Dunnett', columnas: ['Cepa', 'Control', 'n', 'Media', 'DE', 'Diferencia', 't', 'gl', 'p_ajustado_Dunnett'],
+      filas: DUN.filas.map((f) => ({ Cepa: f.cepa, Control: DUN.control, n: f.n, Media: f.media, DE: finito(f.sd) ? f.sd : null, Diferencia: f.dif, t: finito(f.t) ? f.t : null, gl: DUN.df, p_ajustado_Dunnett: finito(f.p) ? f.p : null })) })
     hojas.push({ nombre: 'Resumen', columnas: ['Resumen'], filas: resumen.map((t) => ({ Resumen: t })) })
     excelDe(hojas).then((b) => descargarBlob(b, 'reproducibilidad_biofilm.xlsx'))
   }
@@ -158,6 +171,20 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
                         <td><b>{v.cepa}</b></td>{v.porExp.map((x, i) => <td key={i}>{n3(x)}</td>)}
                         <td>{n3(v.media)}</td><td>{n3(v.sd)}</td><td>{n1(v.cv)}</td>
                         <td><Ok ok={finito(v.cv) ? v.cv <= cvMax : null}>{evalCv(v.cv)}</Ok></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <h3>CV intra-ensayo <Nota>{'CV de los pocillos de cada cepa dentro de una misma placa: mide la variación técnica (pipeteo, lavado, tinción).\nSuele ser menor que el CV entre experimentos. Se evalúa con los mismos límites.'}</Nota></h3>
+              <div className="tabla-scroll">
+                <table className="tabla">
+                  <thead><tr><th>Cepa</th>{exps.map((e) => <th key={e.id}>{e.nombre}</th>)}<th>Promedio</th><th>Evaluación</th></tr></thead>
+                  <tbody>
+                    {R.intra.map((c) => (
+                      <tr key={c.cepa}>
+                        <td><b>{c.cepa}</b></td>{c.porExp.map((x, i) => <td key={i}><Ok ok={finito(x) ? x <= cvMax : null}>{n1(x)}</Ok></td>)}
+                        <td>{n1(c.media)}</td><td><Ok ok={finito(c.media) ? c.media <= cvMax : null}>{evalCv(c.media)}</Ok></td>
                       </tr>
                     ))}
                   </tbody>
@@ -247,7 +274,36 @@ export function ReproTab({ s, D, o, setO, grupoModo }) {
               ) : <p>Hacen falta al menos 2 cepas presentes en todos los experimentos.</p>}
               {R.icc && <p className="ayuda">{R.icc.n} cepas × {R.icc.k} experimentos · F({R.icc.df1}; {R.icc.df2}) = {n2(R.icc.F)}, {pEq(R.icc.p)}{R.completas.length < cepas.length ? ` · no entran las cepas que faltan en algún experimento (${cepas.filter((c) => !R.completas.includes(c)).join(', ')})` : ''}</p>}
             </section>
-            <p className="ayuda">Cálculos verificados contra scipy, statsmodels y pingouin (equivalentes a aov, car::Anova, shapiro.test, kruskal.test, cor.test y psych::ICC de R). Detalle en «Métodos».</p>
+            <section className="resultado-test">
+              <div className="titulo-fila">
+                <h2>5. Cepas contra un control (Dunnett) <Nota>{'Compara cada cepa con la cepa control usando un valor por experimento (la media de sus pocillos): n = número de experimentos.\nUsa la varianza común de todas las cepas (ANOVA) y el p ya está ajustado por todas las comparaciones contra el control.\nH0: la cepa tiene la misma media que el control. Supone varianzas parecidas entre cepas.'}</Nota></h2>
+                <div className="fila-ctrl" style={{ margin: 0 }}>
+                  <span className="etq-campo">Control</span>
+                  <Select value={control} onChange={(v) => setO('reproControl', v)} opciones={cepas.map((c) => [c, c])} />
+                </div>
+              </div>
+              {DUN ? (
+                <>
+                  <div className="tabla-scroll">
+                    <table className="tabla">
+                      <thead><tr><th>Cepa</th><th>n</th><th>Media</th><th>DE</th><th>Diferencia con el control</th><th>t</th><th>p ajustado</th><th>Resultado</th></tr></thead>
+                      <tbody>
+                        <tr className="fila-activa"><td><b>{DUN.control}</b> (control)</td><td>{DUN.nControl}</td><td>{n3(DUN.mediaControl)}</td><td>{n3(DUN.sdControl)}</td><td>–</td><td>–</td><td>–</td><td>control</td></tr>
+                        {DUN.filas.map((f) => (
+                          <tr key={f.cepa}>
+                            <td><b>{f.cepa}</b></td><td>{f.n}</td><td>{n3(f.media)}</td><td>{n3(f.sd)}</td>
+                            <td>{finito(f.dif) ? (f.dif > 0 ? '+' : '') + n3(f.dif) : '–'}</td><td>{n2(f.t)}</td><td>{pTxt(f.p)}</td>
+                            <td>{finito(f.p) ? (f.p < 0.05 ? <b>{`${f.dif > 0 ? 'Mayor' : 'Menor'} que el control`}</b> : 'Sin diferencia clara') : 'No se puede calcular'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="ayuda">{exps.length} experimentos · gl del error = {DUN.df}{DUN.df < 4 ? ' · con tan pocos grados de libertad la prueba solo detecta diferencias grandes' : ''}</p>
+                </>
+              ) : <p>Hacen falta al menos dos cepas.</p>}
+            </section>
+            <p className="ayuda">Cálculos verificados contra scipy, statsmodels y pingouin (equivalentes a aov, car::Anova, shapiro.test, kruskal.test, cor.test y psych::ICC de R). Detalle en Datos › Método.</p>
           </>
         )}
       </div>

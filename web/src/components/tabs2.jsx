@@ -608,7 +608,7 @@ function MetodoDetalle({ d, odc, restar }) {
       <p className="ayuda">Valores críticos de G calculados con la fórmula de arriba (coinciden con las tablas publicadas de Grubbs, 1969).</p>
 
       <h3>6. Coeficiente de variación (%RSD)</h3>
-      <p>Mide la dispersión de las réplicas en relación con su media: <code>CV = 100 × s / x̄</code> (en %). No es un test estadístico sino un criterio de calidad: si el CV de una muestra supera el límite elegido (actual: {cvMax} %), se marca como sospechoso el pocillo más alejado de la media, que es el que más aporta a la dispersión. En el detalle se informa también el CV que quedaría sin ese pocillo. Para OD de cristal violeta se suele aceptar un CV de hasta 15 a 20 % entre réplicas técnicas.</p>
+      <p>Mide la dispersión de las réplicas en relación con su media: <code>CV = 100 × s / x̄</code> (en %). No es un test estadístico sino un criterio de calidad: si el CV de una muestra supera el límite elegido (actual: {cvMax} %), se marca como sospechoso el pocillo más alejado de la media (el que más aporta a la dispersión) y se recalcula el CV sin él; se repite, de a un pocillo por vez, hasta que el CV cumpla el límite o queden 2 pocillos. El detalle de cada pocillo informa el orden y el CV en cada paso. Con la exclusión automática activa, los pocillos marcados dejan de usarse en todos los cálculos (medias, gráficos, comparaciones, estadística y reproducibilidad). Para OD de cristal violeta se suele aceptar un CV de hasta 15 a 20 % entre réplicas técnicas.</p>
 
       <h3>7. Qué pasa con los sospechosos</h3>
       <p>Sea cual sea el método, un pocillo sospechoso solo se <b>excluye automáticamente</b> si activás esa opción. Siempre podés forzar el estado de cada pocillo con un clic en el gráfico o en el mapa de la placa: lo que se decide a mano tiene prioridad sobre el test. Un pocillo excluido a mano no entra en el cálculo de los tests ni en las medias, y si era un blanco deja de contarse en el ODc.</p>
@@ -629,6 +629,8 @@ function MetodoDetalle({ d, odc, restar }) {
         <li><b>Variabilidad</b>: cada placa aporta la media de sus pocillos por cepa; entre placas se calculan media, DE y <code>CV % = DE ÷ media × 100</code>. En biofilm un CV menor que 20–30 % suele considerarse aceptable (los límites se pueden cambiar).</li>
         <li><b>¿Difieren las placas?</b> Para cada cepa, ANOVA de una vía con la placa como factor y los pocillos como datos (Kruskal-Wallis si los residuos no son normales o alguna placa tiene menos de 3 pocillos), y ANOVA de dos vías cepa × placa (sumas de cuadrados tipo II).</li>
         <li><b>Correlación</b> entre pares de placas con la media de cada cepa: Pearson si las medias son normales, si no Spearman. Hacen falta 3 o más cepas.</li>
+        <li><b>CV intra-ensayo:</b> CV % de los pocillos de cada cepa dentro de cada placa (variación técnica), con los mismos límites.</li>
+        <li><b>Dunnett:</b> cada cepa contra un control elegido, con un valor por placa (ANOVA de una vía y p ajustado por Dunnett con la t multivariada).</li>
         <li><b>ICC</b> (Shrout y Fleiss): ICC(2,1) de acuerdo absoluto e ICC(3,1) de consistencia, con IC 95 % (McGraw y Wong). Menor que 0,5 pobre, 0,5–0,75 moderada, 0,75–0,9 buena, mayor que 0,9 excelente (Koo y Li, 2016).</li>
       </ul>
       <h4>Precauciones</h4>

@@ -186,22 +186,31 @@ export function detectarGrubbs(x, conf = '95') {
   return res
 }
 
-// Coeficiente de variación (%RSD = 100 · s / x̄): si supera el límite, es sospechoso el pocillo
-// más alejado de la media (el que más aporta a la dispersión)
+// Coeficiente de variación (%RSD = 100 · s / x̄): mientras supere el límite se marca, de a uno, el pocillo
+// más alejado de la media (el que más aporta a la dispersión), recalculando el CV sin los ya marcados.
+// Se frena al llegar al CV pedido o cuando quedan 2 pocillos. idxs: posiciones marcadas, en orden de eliminación.
 export function detectarCV(x, limite = 20) {
   const n = x.length
-  const res = { idx: null, stat: null, crit: limite, n, lado: '', cvSin: null }
+  const res = { idx: null, idxs: [], pasos: [], stat: null, crit: limite, n, lado: '', cvSin: null }
   if (n < 3 || x.some((v) => !finito(v))) return res
-  const m = media(x)
-  if (!(m !== 0)) return res
-  const cv = (100 * desvio(x)) / Math.abs(m)
-  let k = 0
-  x.forEach((v, i) => { if (Math.abs(v - m) > Math.abs(x[k] - m)) k = i })
-  const resto = x.filter((_, i) => i !== k)
-  res.stat = cv
-  res.cvSin = (100 * desvio(resto)) / Math.abs(media(resto))
-  res.lado = x[k] > m ? 'superior' : 'inferior'
-  if (cv > limite) res.idx = k
+  const cvDe = (v) => { const m = media(v); return m !== 0 ? (100 * desvio(v)) / Math.abs(m) : NaN }
+  let rest = x.map((v, i) => i)
+  res.stat = cvDe(x)
+  if (!finito(res.stat)) return res
+  let cv = res.stat
+  while (cv > limite && rest.length > 2) {
+    const m = media(rest.map((i) => x[i]))
+    let k = rest[0]
+    rest.forEach((i) => { if (Math.abs(x[i] - m) > Math.abs(x[k] - m)) k = i })
+    res.pasos.push({ idx: k, lado: x[k] > m ? 'superior' : 'inferior', cvAntes: cv })
+    rest = rest.filter((i) => i !== k)
+    cv = cvDe(rest.map((i) => x[i]))
+    res.pasos[res.pasos.length - 1].cvDespues = cv
+  }
+  res.idxs = res.pasos.map((q) => q.idx)
+  if (res.idxs.length) { res.idx = res.idxs[0]; res.lado = res.pasos[0].lado }
+  res.cvSin = cv
+  res.alcanzado = cv <= limite
   return res
 }
 
@@ -235,14 +244,18 @@ export function marcarAtipicos(e, exclManual, exclForzado, det) {
     const x = idx.map((i) => e[i].OD)
     const d = metodo === 'grubbs' ? detectarGrubbs(x, conf) : metodo === 'cv' ? detectarCV(x, cvMax) : detectarQ(x, conf)
     idx.forEach((i) => { e[i].Estadistico = d.stat; e[i].Critico = d.crit })
-    if (d.idx !== null) {
+    if (metodo === 'cv') {
+      d.pasos.forEach((q, j) => {
+        const i = idx[q.idx]
+        e[i].Sospechoso = true
+        detalle[i] = `CV de la muestra ${dec(q.cvAntes, 1)} % > límite ${cvMax} %: pocillo n.º ${j + 1} más alejado de la media (extremo ${q.lado}); sin él, CV = ${dec(q.cvDespues, 1)} %${d.alcanzado ? '' : ' (se frena con 2 pocillos)'}`
+      })
+    } else if (d.idx !== null) {
       const i = idx[d.idx]
       e[i].Sospechoso = true
       detalle[i] = metodo === 'grubbs'
         ? `Test de Grubbs (extremo ${d.lado}): G = ${dec(d.stat, 3)} > crítico ${dec(d.crit, 3)} (n = ${d.n}, confianza ${conf} %)`
-        : metodo === 'cv'
-          ? `CV de la muestra = ${dec(d.stat, 1)} % > límite ${cvMax} % (pocillo más alejado de la media; sin él, CV = ${dec(d.cvSin, 1)} %)`
-          : `Test Q de Dixon (extremo ${d.lado}): Q = ${dec(d.stat, 3)} > crítico ${dec(d.crit, 3)} (n = ${d.n}, confianza ${conf} %)`
+        : `Test Q de Dixon (extremo ${d.lado}): Q = ${dec(d.stat, 3)} > crítico ${dec(d.crit, 3)} (n = ${d.n}, confianza ${conf} %)`
     }
   }
   e.forEach((r, i) => {
