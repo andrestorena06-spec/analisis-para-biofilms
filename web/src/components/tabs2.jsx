@@ -15,10 +15,11 @@ import { resumenBlancos } from '../blancos.js'
 import { excelDe } from '../api.js'
 import { Q_TABLA } from '../criticos.js'
 import { criticoGrubbs, normalizarMetodo } from '../motor.js'
-import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, coma, estiloDefecto, fmt, t95 } from '../utils.js'
+import { ESCALAS, conRango, escalaValida, estiloEscala, descargarBlob, coma, estiloDefecto, fEscala, fmt, t95 } from '../utils.js'
 import { textoBlanco } from '../correccion.js'
 import { seroDe } from '../serotipos.js'
 import { BotonBlanco, GrupoBlanco } from './blanco.jsx'
+import { TablaError, gruposDeEstado } from './tablaerror.jsx'
 
 const nombreMetodo = { q: 'Test Q de Dixon', grubbs: 'Test de Grubbs', cv: 'Coeficiente de variación (%RSD)' }
 const ERRORES = [['ic95', 'IC 95 %'], ['sd', 'DE'], ['sem', 'SEM']]
@@ -88,6 +89,8 @@ function RevisionPocillos({ s }) {
   const ordenE = o.orden === 'asc' || o.orden === 'desc' ? [...s.ordenMuestras].sort((a, b) => (o.orden === 'asc' ? 1 : -1) * (mediaDe(a) - mediaDe(b))) : s.ordenMuestras
   const excluidos = estado.filter((e) => !e.Usado)
   const sospechosos = estado.filter((e) => e.Sospechoso && e.Usado)
+  const cvLimR = Number(d.cvMax) || 20
+  const gruposTabla = gruposDeEstado(estado, ordenE, fEscala(escE, odcP, resta), resta)
 
   return (
     <div>
@@ -116,6 +119,7 @@ function RevisionPocillos({ s }) {
           <InterruptorCinta simbolo="x̄" texto="Media" valor={o.medias} onChange={(v) => setO('medias', v)} tip="Valor medio escrito sobre cada muestra" />
           <InterruptorCinta simbolo="±" texto="Error" valor={o.errores} onChange={(v) => setO('errores', v)} tip="Agrega el error junto al valor medio" />
           <CampoCinta etiqueta="Error"><Select value={o.error} onChange={(v) => setO('error', v)} opciones={ERRORES} /></CampoCinta>
+          <InterruptorCinta simbolo="%" texto={o.error === 'sd' ? 'CV %' : ERROR_REL[tipoRel(o.error)].etq} valor={!!o.cv} onChange={(v) => setO('cv', v)} tip={`Fila debajo de los nombres con el error de cada muestra en % de la media (igual que en «Gráfico»):\nDE → CV % · SEM → EE % · IC 95 % → IC %.\nCon DE, en naranja si supera el ${cvLimR} % (límite de CV).`} />
         </Grupo>
         <GrupoEntreReplicas s={s} />
         <BotonOpciones activo={mas} onClick={() => setMas(!mas)} tip="Orden, rotación e imagen" />
@@ -136,8 +140,9 @@ function RevisionPocillos({ s }) {
           <span className="ayuda">Clic sobre un punto para excluirlo o incluirlo <Nota>Azul: aceptado. Cruz roja: excluido. Anillo naranja: sospechoso según el test. Lo que decidís a mano tiene prioridad sobre el test. El desarrollo del cálculo está en «Métodos».</Nota></span>
         </div>
         <div className="figura">
-          <ExcluirChart ref={svg} estado={estado} orden={ordenE} o={o} est={s.estilos.excluir} eje={ejeE} odc={odcP} escala={escE} resta={resta} onClickPunto={s.alternarPocillo} onContext={abrirMenu} />
+          <ExcluirChart ref={svg} estado={estado} orden={ordenE} o={o} est={s.estilos.excluir} eje={ejeE} odc={odcP} escala={escE} resta={resta} cvLim={cvLimR} onClickPunto={s.alternarPocillo} onContext={abrirMenu} />
         </div>
+        <TablaError grupos={gruposTabla} error={o.error} cvLim={cvLimR} eje={`${escE === 'odc' ? 'OD ÷ ODc' : s.analisis.blanco?.restado ? 'OD corregida' : 'OD'} media`} />
         {ESCALAS[o.escala]?.f && escE === 'od' && <p className="aviso-caja">Sin ODc (faltan blancos aceptados): se muestra en OD.</p>}
         {sinBlancoResta && <p className="aviso-caja">Esta placa no tiene blancos aceptados: no se le puede restar el blanco y queda con la OD leída.</p>}
         {s.restarBlanco && escE === 'odc' && <p className="aviso-caja info">La escala OD ÷ ODc se calcula con la OD leída: restar el blanco no la cambia. Elegí <b>OD</b> en «Escala» para ver la OD corregida.</p>}
@@ -163,7 +168,7 @@ function RevisionPocillos({ s }) {
       {exp && svg.current && (
         <ExportDialog nombre={`revision_${s.a.nombre}`} size0={tamDe(svg.current)} onClose={() => setExp(false)}
           render={(ref, tam) => <ExcluirChart ref={ref} estado={estado} orden={ordenE} o={o} est={s.estilos.excluir}
-            eje={ejeE} odc={odcP} escala={escE} resta={resta} onClickPunto={() => {}} onContext={(e) => e.preventDefault()} tam={tam} />} />
+            eje={ejeE} odc={odcP} escala={escE} resta={resta} cvLim={cvLimR} onClickPunto={() => {}} onContext={(e) => e.preventDefault()} tam={tam} />} />
       )}
     </div>
   )

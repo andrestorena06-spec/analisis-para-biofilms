@@ -65,7 +65,7 @@ export function EtiquetasX({ labels, cx, yBase, ang, est }) {
 
 // Error relativo de la fila de abajo: el mismo error que muestran las barras, en % de la media
 export const ERROR_REL = {
-  sd: { etq: 'DE %', nombre: 'Desviación estándar relativa (CV)', sigla: 'DE' },
+  sd: { etq: 'CV %', nombre: 'Desviación estándar relativa (CV)', sigla: 'DE' },
   sem: { etq: 'EE %', nombre: 'Error estándar relativo', sigla: 'EE' },
   ic95: { etq: 'IC %', nombre: 'IC 95 % relativo (semiancho del intervalo)', sigla: 'IC 95 %' },
 }
@@ -317,10 +317,10 @@ export function resumenGrupo(g, tipo, tv = (v) => v) {
   const sd = u.length > 1 ? Math.sqrt(u.reduce((a, b) => a + (b - m) ** 2, 0) / (u.length - 1)) : null
   const sem = sd === null ? null : sd / Math.sqrt(u.length)
   const err = tipo === 'sd' ? sd : tipo === 'sem' ? sem : tipo === 'ic95' ? ic95(sem, u.length) : null
-  return { m, err, n: u.length }
+  return { m, err, n: u.length, sd, sem }
 }
 
-export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o, est, eje, onClickPunto, onContext, tam, odc, escala, resta = 0, tipPunto }, svgRef) {
+export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o, est, eje, onClickPunto, onContext, tam, odc, escala, resta = 0, tipPunto, cvLim = 20 }, svgRef) {
   const [wrap, Wmed] = useAncho()
   const W = anchoContenido({ tam, disponible: Wmed, etiquetas: orden, ang: o.rotar, est, derecha: escalaValida(escala, odc) !== 'od' ? 62 : 16,
     banda: Math.max(90, 14 * Math.max(1, ...orden.map((m) => estado.filter((e) => e.Muestra === m).length)) + 24) })
@@ -347,7 +347,7 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
   const L = calcularLayout({
     W, etiquetas: labels, ang: o.rotar, est, yLabels,
     titulo: !!est.titulo.texto, tituloX: !!est.leyendaX.texto,
-    altoPlot: 280 + est.valores.size * 2, extraAbajo: 40, fijoH: tam ? tam.h : 0, derecha: rel ? 62 : undefined,
+    altoPlot: 280 + est.valores.size * 2, extraAbajo: 40 + (o.cv ? ALTO_FILA_CV : 0), fijoH: tam ? tam.h : 0, derecha: rel ? 62 : undefined,
     anchoTituloY: medir(est.leyendaY.texto || eje, est.leyendaY.size, est.leyendaY.bold, est.leyendaY.italic),
   })
   const y = escalaY(L, eY)
@@ -416,6 +416,14 @@ export const ExcluirChart = forwardRef(function ExcluirChart({ estado, orden, o,
 
         <EtiquetasX labels={labels} cx={cx} yBase={y(eY.min)} ang={o.rotar} est={est} />
         <LeyendaX L={L} est={est} />
+        {o.cv && (() => {
+          const tr = tipoRel(o.error), R = ERROR_REL[tr]
+          return <FilaCV L={L} lim={cvLim} tipo={tr} items={res.map((r, i) => {
+            const err = r ? (tr === 'sd' ? r.sd : tr === 'sem' ? r.sem : (o.error === 'ic95' ? r.err : null)) : null
+            const v = r && Number.isFinite(err) && r.m > 1e-6 ? (100 * err) / r.m : NaN
+            return { x: cx(i), v, tip: Number.isFinite(v) ? `${R.nombre} de ${labels[i]}\n= 100 × ${R.sigla} ÷ media = 100 × ${fmt(err, 4)} ÷ ${fmt(r.m, 4)} = ${fmt(v, 1)} %\n(${r.n} pocillos aceptados)` : `${labels[i]}: hacen falta 2 o más pocillos aceptados` }
+          })} />
+        })()}
 
         <g transform={`translate(${L.left + L.plotW / 2},${L.H - 14})`} style={{ fontSize: 12, fill: TEMA.texto }}>
           <circle cx="-120" cy="-4" r="5" fill="#2f5d8a" /><text x="-110">Aceptado</text>

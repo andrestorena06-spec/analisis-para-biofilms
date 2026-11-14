@@ -12,6 +12,7 @@ import { ComentariosRevision } from './tabs2.jsx'
 import { tamDe } from './ui.jsx'
 import { conRango, estiloDefecto, estiloEscala, fmt } from '../utils.js'
 import { normalizarMetodo } from '../motor.js'
+import { TablaError, gruposDeEstado } from './tablaerror.jsx'
 
 const NOMBRE = { q: 'Test Q de Dixon', grubbs: 'Test de Grubbs', cv: 'Coeficiente de variación' }
 const ERRORES = [['sd', 'DE'], ['sem', 'SEM'], ['ic95', 'IC 95 %']]
@@ -146,6 +147,7 @@ export function RevisionReplicas({ s }) {
             <button className="chico" disabled={iCepa >= cepas.length - 1} onClick={() => setO('cepa', cepas[iCepa + 1])} aria-label="Cepa siguiente" data-tip="Cepa siguiente"><Icono n="flecha" size={13} /></button>
           </div>
           <div className="figura">{chart(svg, undefined, abrirMenu, alternar)}</div>
+          <TablaError grupos={gruposDeEstado(filas, [...new Set(filas.map((e) => e.Muestra))], (v) => v, 0, (e) => e.placa)} error={o.error} cvLim={Number(o.cvMax) || 20} eje={`${R.escala === 'odc' ? 'OD ÷ ODc' : 'OD'} media`} tituloCol="Cepa y medio" />
           <div className="fila" style={{ marginTop: 10 }}>
             {sospechosos.length > 0 && <span className="chip aviso" data-tip={`Sospechosos dentro del análisis\n${sospechosos.map((e) => `${e.placa} · ${e.Cepa}: ${e.Motivo}`).join('\n')}`}>{sospechosos.length} {sospechosos.length === 1 ? 'sospechoso' : 'sospechosos'} sin excluir</span>}
             {excluidos.length ? <span className="ayuda"><b>Excluidos:</b> {excluidos.map((e) => <span key={e.Pocillo} className="chip peligro chip-boton" style={{ margin: '0 4px 4px 0' }} data-tip={`${e.placa} · ${e.Cepa}\n${eje} = ${fmt(e.OD, 3)}\n${e.Manual ? 'Excluido a mano' : e.Motivo}\nClic para volver a incluirlo`} onClick={() => alternar(e.Pocillo)}>{e.placa} · {e.Cepa}</span>)}</span>
